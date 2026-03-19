@@ -2,12 +2,16 @@
 
 [English](./README.md)
 
-精选 Claude Code 插件 — 开箱即用的 skills、hooks、rules 和 agents，提升 AI 辅助开发效率。
+精选 Claude Code 插件市场 — 开箱即用的 skills、hooks、rules 和 agents，提升 AI 辅助开发效率。
 
 ## 安装
 
 ```bash
-claude plugin add zhangtyzzz/cc-best-config
+# 1. 添加插件市场
+claude plugin marketplace add zhangtyzzz/cc-best-config
+
+# 2. 安装插件
+claude plugin install cc-best-config
 ```
 
 ## 已有内容
@@ -16,32 +20,35 @@ claude plugin add zhangtyzzz/cc-best-config
 
 | 技能 | 说明 |
 |------|------|
-| **data-analysis** | 分析 CSV/Excel/数据库数据，生成专业报告（含 Python 图表）。支持数据库协作分析模式，通过协调查询工具（ODPS、BigQuery 等）完成端到端分析流程。内置 PreToolUse hook 自动检测并配置 Python 环境。 |
+| **data-analysis** | 分析 CSV/Excel/数据库数据，生成专业报告。支持数据库协作分析模式（ODPS、BigQuery 等）。 |
+| **frontend-design** | 创建高质量、生产级前端界面，避免通用 AI 风格。 |
+| **skill-creator** | 创建、修改、优化 skills，支持 eval 测试和性能基准分析。 |
+| **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）。 |
 
-### 即将推出
+### Hooks
 
-- **hooks/** — 可复用钩子脚本
-- **commands/** — 斜杠命令
-- **agents/** — 专用子代理
-- **rules/** — 最佳实践规则集
+| 钩子 | 说明 |
+|------|------|
+| **doc-check-on-stop** | 会话结束时自动检查文档（README、CLAUDE.md 等）是否需要更新。 |
 
 ## 项目结构
 
 ```
-├── skills/           技能定义（每个技能一个目录）
-├── hooks/            钩子脚本
-├── commands/         斜杠命令
-├── agents/           子代理定义
-├── rules/            通用规则
-└── .claude-plugin/
-    └── plugin.json   插件清单
+├── .claude-plugin/
+│   └── marketplace.json      Marketplace 清单
+├── plugins/
+│   └── cc-best-config/       主插件
+│       ├── .claude-plugin/
+│       │   └── plugin.json   插件清单
+│       ├── skills/           技能定义（每个技能一个目录）
+│       ├── hooks/            钩子脚本
+│       ├── commands/         斜杠命令
+│       ├── agents/           子代理定义
+│       └── rules/            通用规则
+├── CLAUDE.md
+├── README.md
+└── LICENSE
 ```
-
-每个 skill 目录包含：
-
-- `SKILL.md` — 技能主文件，含 YAML frontmatter（name, description, hooks）
-- `scripts/` — 附带脚本（hook 脚本、工具等）
-- `references/` — 参考文档
 
 ## 许可证
 
