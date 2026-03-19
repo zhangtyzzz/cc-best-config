@@ -24,6 +24,7 @@ claude plugin install cc-best-config
 | **frontend-design** | Create distinctive, production-grade frontend interfaces with high design quality. Avoids generic AI aesthetics. |
 | **skill-creator** | Create, modify, and optimize skills. Run evals, benchmark performance, and improve triggering accuracy. |
 | **excalidraw-diagram-generator** | Generate Excalidraw diagrams from natural language — flowcharts, architecture diagrams, mind maps, and more. |
+| **dingtalk-bot** | DingTalk bot agent — receives messages via WebSocket and replies intelligently. Supports text, image, audio, video, file, and rich text messages. |
 
 ### Hooks
 

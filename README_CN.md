@@ -24,6 +24,7 @@ claude plugin install cc-best-config
 | **frontend-design** | 创建高质量、生产级前端界面，避免通用 AI 风格。 |
 | **skill-creator** | 创建、修改、优化 skills，支持 eval 测试和性能基准分析。 |
 | **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）。 |
+| **dingtalk-bot** | 钉钉机器人 agent，通过 WebSocket 接收钉钉消息并智能回复，支持文本/图片/语音/视频/文件/富文本消息。 |
 
 ### Hooks
 

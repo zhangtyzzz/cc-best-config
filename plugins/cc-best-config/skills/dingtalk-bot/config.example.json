@@ -1,0 +1,7 @@
+{
+  "clientId": "your-app-key-here",
+  "clientSecret": "your-app-secret-here",
+  "outputFile": "./messages.json",
+  "cardTemplateId": "",
+  "enableCardStreaming": false
+}
