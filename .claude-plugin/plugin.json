@@ -14,5 +14,7 @@
     "data-analysis",
     "best-practices"
   ],
-  "skills": ["./.claude/skills/"]
+  "skills": ["./skills/"],
+  "commands": ["./commands/"],
+  "rules": ["./rules/"]
 }
