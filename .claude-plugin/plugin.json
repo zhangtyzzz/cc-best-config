@@ -1,0 +1,18 @@
+{
+  "name": "cc-best-config",
+  "version": "0.1.0",
+  "description": "Claude Code best practices — curated skills, hooks, and rules for productive AI-assisted development",
+  "author": {
+    "name": "zhangtyzzz"
+  },
+  "homepage": "https://github.com/zhangtyzzz/cc-best-config",
+  "repository": "https://github.com/zhangtyzzz/cc-best-config",
+  "license": "Apache-2.0",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "data-analysis",
+    "best-practices"
+  ],
+  "skills": ["./.claude/skills/"]
+}
