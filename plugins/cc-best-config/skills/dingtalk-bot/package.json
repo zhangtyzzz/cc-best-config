@@ -1,1 +1,0 @@
-{"name":"dingtalk-bot","version":"1.0.0","description":"钉钉机器人 agent 技能。通过 WebSocket 长连接接收钉钉消息，由 agent 自身的 AI 能力智能处理并回复。支持文本/图片/语音/视频/文件/富文本消息接收，支持 text/markdown/actionCard/图片/文件/链接多格式回复。","dependencies":{"axios":"^1.6.0","commander":"^11.0.0","dingtalk-stream":"^2.1.5"}}
