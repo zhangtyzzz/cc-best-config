@@ -11,8 +11,9 @@
   "keywords": [
     "claude-code",
     "skills",
-    "data-analysis",
-    "best-practices"
+    "hooks",
+    "best-practices",
+    "productivity"
   ],
   "skills": ["./skills/"],
   "commands": ["./commands/"],

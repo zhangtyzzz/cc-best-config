@@ -24,13 +24,14 @@ claude plugin install cc-best-config
 | **frontend-design** | Create distinctive, production-grade frontend interfaces with high design quality. Avoids generic AI aesthetics. |
 | **skill-creator** | Create, modify, and optimize skills. Run evals, benchmark performance, and improve triggering accuracy. |
 | **excalidraw-diagram-generator** | Generate Excalidraw diagrams from natural language — flowcharts, architecture diagrams, mind maps, and more. |
-| **dingtalk-bot** | DingTalk bot agent — receives messages via WebSocket and replies intelligently. Supports text, image, audio, video, file, and rich text messages. |
 
 ### Hooks
 
-| Hook | Description |
-|------|-------------|
-| **doc-check-on-stop** | Automatically checks if documentation (README, CLAUDE.md, etc.) needs updating when a session ends. |
+| Hook | Event | Description |
+|------|-------|-------------|
+| **protect-files** | PreToolUse | Blocks edits to sensitive files (.env, credentials, keys, etc.). |
+| **notify-on-idle** | Notification | Desktop notification when Claude needs your input (macOS/Linux). |
+| **stop-guard** | Stop | Verifies task completion and checks if docs need updating before session ends. |
 
 ## Project Structure
 

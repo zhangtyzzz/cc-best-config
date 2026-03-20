@@ -36,11 +36,12 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **frontend-design** — 创建高质量、生产级前端界面，避免通用 AI 风格
 - **skill-creator** — 创建、修改、优化 skills，支持 eval 测试和性能基准分析
 - **excalidraw-diagram-generator** — 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）
-- **dingtalk-bot** — 钉钉机器人 agent，通过 WebSocket 接收钉钉消息并智能回复，支持多种消息格式
 
 ## Hooks
 
-- **doc-check-on-stop** — 会话结束时自动检查文档是否需要更新（README、CLAUDE.md 等）
+- **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
+- **notify-on-idle** — Claude 等待输入时发送桌面通知，支持 macOS/Linux（Notification）
+- **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
 
 ## 安装
 

@@ -1,12 +1,33 @@
 {
-  "description": "Auto-check and update documentation when session ends",
+  "description": "Best-practice hooks: file protection, idle notification, and stop guard (task completion + doc check)",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-on-idle.sh"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/doc-check-on-stop.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-guard.sh"
           }
         ]
       }
