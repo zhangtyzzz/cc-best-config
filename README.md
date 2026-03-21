@@ -24,6 +24,7 @@ claude plugin install cc-best-config
 | **frontend-design** | Create distinctive, production-grade frontend interfaces with high design quality. Avoids generic AI aesthetics. |
 | **skill-creator** | Create, modify, and optimize skills. Run evals, benchmark performance, and improve triggering accuracy. |
 | **excalidraw-diagram-generator** | Generate Excalidraw diagrams from natural language — flowcharts, architecture diagrams, mind maps, and more. |
+| **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. Based on Karpathy's autoresearch concept. |
 
 ### Hooks
 
