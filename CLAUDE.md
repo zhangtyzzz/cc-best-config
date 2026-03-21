@@ -36,6 +36,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **frontend-design** — 创建高质量、生产级前端界面，避免通用 AI 风格
 - **skill-creator** — 创建、修改、优化 skills，支持 eval 测试和性能基准分析
 - **excalidraw-diagram-generator** — 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）
+- **auto-research** — 万物皆可 auto-regressive — 设定可衡量标准后，AI 自动迭代优化代码/配置/内容，支持测试通过率、基准分数、覆盖率等任何可量化指标
 
 ## Hooks
 
