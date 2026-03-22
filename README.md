@@ -4,6 +4,12 @@
 
 Curated Claude Code marketplace — production-ready skills, hooks, rules, and agents for AI-assisted development.
 
+## Highlights
+
+- Includes iterative optimization workflows such as `auto-research`, where the main agent stays responsible for supervision and must keep workers running until a real stop condition is met.
+- Bundles specialized content and media skills, including article illustration and API-based image generation.
+- Ships as a marketplace plugin, so new skills added under `plugins/cc-best-config/skills/` are installable through the same package.
+
 ## Install
 
 ```bash
@@ -24,7 +30,15 @@ claude plugin install cc-best-config
 | **frontend-design** | Create distinctive, production-grade frontend interfaces with high design quality. Avoids generic AI aesthetics. |
 | **skill-creator** | Create, modify, and optimize skills. Run evals, benchmark performance, and improve triggering accuracy. |
 | **excalidraw-diagram-generator** | Generate Excalidraw diagrams from natural language — flowcharts, architecture diagrams, mind maps, and more. |
-| **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. Based on Karpathy's autoresearch concept. |
+| **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. The main agent acts as supervisor and must continue or relaunch worker agents until an explicit stop condition is verified. |
+| **baoyu-article-illustrator** | Analyze an article, decide where visuals are needed, and generate consistent illustrations using a Type × Style workflow. |
+| **baoyu-image-gen** | Generate images through OpenAI, Google, OpenRouter, DashScope, ModelScope, Jimeng, Seedream, or Replicate APIs. Supports saved prompt files, references, aspect ratios, and batch mode. |
+
+## Notes
+
+- `baoyu-image-gen` uses `bun` or `npx -y bun` to run its script and expects provider credentials via env vars and/or `EXTEND.md`.
+- `baoyu-article-illustrator` depends on article-specific prompt files and is designed to work with `baoyu-image-gen` for final rendering.
+- `auto-research` is for tasks with a cheap, objective evaluation loop. If the metric is noisy or subjective, it is the wrong tool.
 
 ### Hooks
 
