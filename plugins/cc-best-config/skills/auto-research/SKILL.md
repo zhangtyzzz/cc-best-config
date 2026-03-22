@@ -81,7 +81,53 @@ Before starting the loop, run the evaluation enough times to establish a trustwo
 
 ## Phase 3: The Loop
 
-Once setup is confirmed, spawn a background subprocess (Agent tool) to run the iteration loop. This keeps the main conversation responsive — the user can check in on progress or do other work.
+Once setup is confirmed, use the Agent tool to run the iteration loop. Keep the main conversation responsive, but do **not** delegate ownership of the objective away from the main agent.
+
+### Main agent = supervisor, always
+
+The main agent is the experiment supervisor and is accountable for the outcome. A subagent is only an execution worker for one stretch of the loop.
+
+That means the main agent must:
+- Own the success criteria, stop conditions, and current best-known metric
+- Check whether the subagent actually reached the requested milestone before accepting that run as "done"
+- Read the subagent's result, compare it against the explicit goal, and decide whether to continue, redirect, or stop
+- Re-launch or redirect the subagent if it stopped early, drifted off task, or ended without satisfying the stop conditions
+
+Never treat "the subagent returned" as equivalent to "the task is complete". Completion is defined only by the metric and stop conditions.
+
+### Subagent contract
+
+When launching a subagent, give it an explicit contract:
+- The target files it may edit
+- The evaluation command and the primary metric to optimize
+- The current baseline and current best result
+- The concrete milestone for this run, such as "continue iterating until you hit one of the allowed stop conditions"
+- A requirement to leave behind updated artifacts such as `iteration_log.md`, commits, and any evaluation outputs
+
+State plainly that the subagent should not stop just because one attempt failed or because it found a small improvement. It should continue iterating until it hits a real stop condition or a hard blocker it cannot resolve.
+
+### Supervision loop
+
+The supervision loop belongs to the main agent:
+
+```
+initialize:
+  create branch: auto-research/<descriptive-name>
+  run eval -> record baseline metric
+  record explicit stop conditions
+
+supervisor loop:
+  1. launch or resume a worker subagent with the current goal and context
+  2. wait for a meaningful checkpoint or completion
+  3. inspect what actually happened:
+     - did the metric improve?
+     - did the worker update the log and commit history correctly?
+     - did it stop because a true stop condition was met, or just because it gave up / timed out / declared itself done too early?
+  4. if the objective is not yet satisfied and no valid stop condition has fired:
+     - send corrective instructions or spawn a fresh worker
+     - continue from the latest accepted state
+  5. only report final completion when the supervisor verifies a real stop condition
+```
 
 ### Workflow
 
@@ -100,6 +146,8 @@ loop:
   7. analyze: keep, build on it, or revert
   8. check stop conditions, then repeat
 ```
+
+If you hand this workflow to a worker subagent, the main agent must still supervise it from outside the loop and restart it when needed. The loop is complete only when the supervisor says it is complete.
 
 ### Recording discipline
 
@@ -129,6 +177,19 @@ End the loop when:
 - The metric hits a user-defined target
 - The evaluation is too noisy to support decisions
 - The user interrupts
+
+Do **not** end the loop for any other reason. In particular, these are **not** valid completion conditions by themselves:
+- The subagent returned control
+- The subagent said it was done
+- One experiment failed
+- The current idea seems weak
+- The worker hit a soft timeout or context boundary
+
+If a worker stops without a valid stop condition, the main agent must treat that as an incomplete run, inspect the blocker, and then either:
+- send the worker back with sharper instructions, or
+- start a new worker from the latest accepted state
+
+Default bias: continue rather than stop. The only acceptable reason to stop is that a declared stop condition has been verified by the main agent.
 
 ## Reporting
 
