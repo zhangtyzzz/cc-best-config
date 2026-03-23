@@ -32,6 +32,15 @@ if [[ -z "$ALL_CHANGES" ]]; then
   exit 0
 fi
 
+# --- Guard against massive file lists (e.g. freshly initialized repos) ---
+FILE_COUNT=$(echo "$ALL_CHANGES" | wc -l | tr -d ' ')
+MAX_FILES=20
+if (( FILE_COUNT > MAX_FILES )); then
+  ALL_CHANGES=$(echo "$ALL_CHANGES" | head -n "$MAX_FILES")
+  ALL_CHANGES="$ALL_CHANGES
+... and $((FILE_COUNT - MAX_FILES)) more files (truncated to avoid context overflow)"
+fi
+
 # Identify code vs doc changes
 CODE_CHANGES=$(echo "$ALL_CHANGES" | grep -v -E '\.(md|txt|rst)$' | grep -v -i 'readme' | grep -v -i 'changelog' | grep -v -i 'license' || true)
 
