@@ -49,7 +49,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 ## Hooks
 
 - **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
-- **notify-on-idle** — Claude 等待输入时发送桌面通知，支持 macOS/Linux（Notification）
+- **notify-push** — 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback（Notification + Stop）。设置 `NOTIFY_URL` 环境变量启用移动端推送
 - **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
 
 ## 安装

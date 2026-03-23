@@ -45,7 +45,7 @@ claude plugin install cc-best-config
 | 钩子 | 事件 | 说明 |
 |------|------|------|
 | **protect-files** | PreToolUse | 阻止修改 .env、密钥、凭证等敏感文件。 |
-| **notify-on-idle** | Notification | Claude 等待输入时发送桌面通知（支持 macOS/Linux）。 |
+| **notify-push** | Notification + Stop | 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback。设置 `NOTIFY_URL` 环境变量启用移动端推送。 |
 | **stop-guard** | Stop | 会话结束前检查任务完成度，并检查文档是否需要更新。 |
 
 ## 项目结构

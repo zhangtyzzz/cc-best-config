@@ -45,7 +45,7 @@ claude plugin install cc-best-config
 | Hook | Event | Description |
 |------|-------|-------------|
 | **protect-files** | PreToolUse | Blocks edits to sensitive files (.env, credentials, keys, etc.). |
-| **notify-on-idle** | Notification | Desktop notification when Claude needs your input (macOS/Linux). |
+| **notify-push** | Notification + Stop | Push notification with task context via HTTP webhook (Bark by default). Falls back to desktop notification. Set `NOTIFY_URL` env var to enable mobile push. |
 | **stop-guard** | Stop | Verifies task completion and checks if docs need updating before session ends. |
 
 ## Project Structure

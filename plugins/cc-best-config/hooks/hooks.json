@@ -1,5 +1,5 @@
 {
-  "description": "Best-practice hooks: file protection, idle notification, and stop guard (task completion + doc check)",
+  "description": "Best-practice hooks: file protection, push + desktop notifications, and stop guard (task completion + doc check)",
   "hooks": {
     "PreToolUse": [
       {
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-on-idle.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-push.sh"
           }
         ]
       }
@@ -25,6 +25,10 @@
     "Stop": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-push.sh"
+          },
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-guard.sh"
