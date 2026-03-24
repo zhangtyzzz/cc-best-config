@@ -19,6 +19,52 @@ Use Claude Code as an orchestrator to coordinate multiple CLI-based AI agents wo
 2. **LLM is all intelligence** — the orchestrator (you) reads raw terminal output and decides: Is the worker idle? Busy? Asking for approval? Done? Errored? You interpret naturally, no regex needed.
 3. **Clean agent abstraction** — switching between Claude Code, Codex, Gemini, aider, or any CLI agent only requires changing the launch command string. No per-agent code paths.
 
+## CRITICAL: Always Use Scripts — Never Raw-Invoke Agent CLIs
+
+**ALL interaction with worker agents MUST go through the provided scripts.** You are an orchestrator, not a shell user. Never bypass the script layer.
+
+❌ **WRONG — Do NOT do any of these:**
+```bash
+# Direct CLI invocation — NEVER do this
+claude --prompt "do something"
+claude <<<'do something'
+echo "do something" | claude
+codex --prompt "do something"
+
+# Raw tmux send without the script — NEVER do this
+tmux send-keys -t orch:w1 "some prompt" Enter
+
+# Launching agents without worker-setup.sh — NEVER do this
+tmux new-window -t orch -n w1
+claude
+```
+
+✅ **RIGHT — Always use the scripts:**
+```bash
+# Launch a worker (creates worktree + tmux window + starts agent)
+"${CLAUDE_SKILL_DIR}/scripts/worker-setup.sh" orch w1 "claude"
+
+# Send a prompt to a worker
+"${CLAUDE_SKILL_DIR}/scripts/worker-send.sh" orch:w1 "Your task description here"
+
+# Read worker output
+"${CLAUDE_SKILL_DIR}/scripts/worker-read.sh" orch:w1 --lines 50
+
+# Approve/deny a permission request
+"${CLAUDE_SKILL_DIR}/scripts/worker-approve.sh" orch:w1 Enter
+
+# Tear down a worker
+"${CLAUDE_SKILL_DIR}/scripts/worker-teardown.sh" orch w1
+```
+
+**Why?** The scripts handle:
+- Git worktree isolation (so workers don't clobber each other's files)
+- Long prompt delivery (load-buffer for prompts >200 chars to avoid truncation)
+- ANSI stripping (clean output for you to interpret)
+- Proper cleanup (agent exit + window close + worktree removal)
+
+Skipping scripts means no worktree isolation, no long-prompt handling, no cleanup, and **broken orchestration**.
+
 ## Agent Profiles
 
 Each agent is defined by just two things: a **launch command** and **behavioral notes** for the orchestrator to know how it works.
