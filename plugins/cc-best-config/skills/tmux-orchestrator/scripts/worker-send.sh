@@ -33,8 +33,9 @@ else
   TMPFILE=$(mktemp)
   trap 'rm -f "$TMPFILE"' EXIT
   printf '%s' "$PROMPT" > "$TMPFILE"
-  tmux load-buffer "$TMPFILE"
-  tmux paste-buffer -t "$TARGET" -d
+  BUFNAME="worker-send-$$"
+  tmux load-buffer -b "$BUFNAME" "$TMPFILE"
+  tmux paste-buffer -t "$TARGET" -b "$BUFNAME" -d
 fi
 
 # Send Enter separately

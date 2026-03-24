@@ -92,6 +92,9 @@ else
   CONTEXT="${CONTEXT} ORCHESTRATOR_READY=0. Fix the errors above before proceeding."
 fi
 
+# Escape JSON special characters in CONTEXT
+CONTEXT_ESCAPED=$(printf '%s' "$CONTEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g')
+
 # Output PreToolUse hook JSON
 cat <<EOF
 {
@@ -99,7 +102,7 @@ cat <<EOF
     "hookEventName": "PreToolUse",
     "permissionDecision": "allow",
     "permissionDecisionReason": "tmux-orchestrator environment check",
-    "additionalContext": "${CONTEXT}"
+    "additionalContext": "${CONTEXT_ESCAPED}"
   }
 }
 EOF

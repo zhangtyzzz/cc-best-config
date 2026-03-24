@@ -10,11 +10,11 @@
 
 set -euo pipefail
 
-SESSION="$1"
-WINDOW="$2"
+SESSION="${1:-}"
+WINDOW="${2:-}"
 KEEP_WORKTREE=false
 
-shift 2 || true
+shift 2 2>/dev/null || true
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --keep-worktree) KEEP_WORKTREE=true; shift ;;

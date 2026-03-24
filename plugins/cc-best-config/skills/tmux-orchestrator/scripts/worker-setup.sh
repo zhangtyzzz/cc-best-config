@@ -57,7 +57,7 @@ fi
 TARGET="${SESSION}:${WINDOW}"
 
 # cd into worktree
-tmux send-keys -t "$TARGET" "cd ${WORKTREE_DIR}" Enter
+tmux send-keys -t "$TARGET" "cd '${WORKTREE_DIR}'" Enter
 sleep 0.5
 
 # Launch agent CLI
