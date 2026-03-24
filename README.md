@@ -33,12 +33,14 @@ claude plugin install cc-best-config
 | **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. The main agent acts as supervisor and must continue or relaunch worker agents until an explicit stop condition is verified. |
 | **baoyu-article-illustrator** | Analyze an article, decide where visuals are needed, and generate consistent illustrations using a Type × Style workflow. |
 | **baoyu-image-gen** | Generate images through OpenAI, Google, OpenRouter, DashScope, ModelScope, Jimeng, Seedream, or Replicate APIs. Supports saved prompt files, references, aspect ratios, and batch mode. |
+| **tmux-orchestrator** | Orchestrate multiple CLI agents (Claude Code, Codex, Gemini, etc.) in parallel via tmux. Uses git worktrees for code isolation, distributes tasks, monitors progress, and merges results. |
 
 ## Notes
 
 - `baoyu-image-gen` uses `bun` or `npx -y bun` to run its script and expects provider credentials via env vars and/or `EXTEND.md`.
 - `baoyu-article-illustrator` depends on article-specific prompt files and is designed to work with `baoyu-image-gen` for final rendering.
 - `auto-research` is for tasks with a cheap, objective evaluation loop. If the metric is noisy or subjective, it is the wrong tool.
+- `tmux-orchestrator` requires `tmux` and at least one agent CLI installed. The orchestrator acts as supervisor, reviewing and approving each worker's tool-use requests within task scope.
 
 ### Hooks
 
