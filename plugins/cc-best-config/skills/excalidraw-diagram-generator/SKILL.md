@@ -156,10 +156,15 @@ Structure the complete Excalidraw file:
 }
 ```
 
-### Step 6: Save and Provide Instructions
+### Step 6: Save and Export
 
 1. Save as `<descriptive-name>.excalidraw`
-2. Inform user how to open:
+2. **Export to PNG** (recommended — so the diagram is immediately usable in documents, reports, and chat):
+   ```bash
+   node <skill-path>/scripts/export-to-png.mjs <diagram>.excalidraw [output.png]
+   ```
+   This uses Excalidraw's native renderer via Playwright for pixel-perfect output. See the "PNG Export" section below for details and options.
+3. Inform user how to open/edit the source `.excalidraw` file:
    - Visit https://excalidraw.com
    - Click "Open" or drag-and-drop the file
    - Or use Excalidraw VS Code extension
@@ -300,6 +305,7 @@ Before delivering the diagram:
 - [ ] Colors follow consistent scheme
 - [ ] File is valid JSON
 - [ ] Element count is reasonable (<20 for clarity)
+- [ ] PNG exported if diagram will be embedded in documents
 
 ## Icon Libraries (Optional Enhancement)
 
@@ -592,9 +598,61 @@ See bundled references for:
 - `templates/flowchart-template.json` - Basic flowchart starter
 - `templates/relationship-template.json` - Relationship diagram starter
 - `templates/mindmap-template.json` - Mind map starter
+- `scripts/export-to-png.mjs` - Export `.excalidraw` to PNG (native renderer via Playwright)
 - `scripts/split-excalidraw-library.py` - Tool to split `.excalidrawlib` files
 - `scripts/README.md` - Documentation for library tools
 - `scripts/.gitignore` - Prevents local Python artifacts from being committed
+
+## PNG Export
+
+After generating an `.excalidraw` file, export it to PNG so it can be embedded in Markdown documents, reports, presentations, or chat messages. The export uses Excalidraw's native renderer via Playwright for pixel-perfect output — identical to Excalidraw's own "Copy as PNG" feature.
+
+### Quick Usage
+
+```bash
+# Default: 2x resolution, output alongside the .excalidraw file
+node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw
+
+# Custom output path
+node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw /path/to/output.png
+
+# Custom scale (3x for very high-res)
+node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw --scale 3
+
+# Skip upscaling (1x)
+node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw --no-scale
+```
+
+### What the Script Does
+
+1. **Loads Excalidraw in a headless browser** — Uses Playwright to run Chromium with `@excalidraw/excalidraw` loaded from esm.sh CDN.
+2. **Calls `exportToBlob()`** — The same rendering function Excalidraw uses for its own "Copy as PNG" feature, ensuring pixel-perfect output with correct element positioning, fonts, and colors.
+3. **Saves the PNG** at the specified scale (default 2x for crisp retina display).
+
+### Requirements
+
+- Node.js 18+
+- Playwright with Chromium (installed in skill's `scripts/node_modules/`)
+- Internet access (for esm.sh CDN on first run; subsequent runs use browser cache)
+
+### When to Export
+
+Always export to PNG when:
+- The diagram will be embedded in a Markdown report (use `![title](./diagram.png)`)
+- The user asks for an image or picture, not just an Excalidraw file
+- The diagram is part of a work report, documentation, or presentation
+
+Skip export when:
+- The user specifically wants only the `.excalidraw` source file
+- The user will edit the diagram further in Excalidraw
+
+### Troubleshooting
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Export timed out | CDN unreachable or slow first load | Retry; first run downloads deps from esm.sh |
+| Blank/empty PNG | No elements in the file | Check the .excalidraw file has elements |
+| Playwright not found | Dependencies not installed | Run `cd <skill-path>/scripts && npm install && npx playwright install chromium` |
 
 ## Limitations
 
