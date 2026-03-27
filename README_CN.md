@@ -35,6 +35,7 @@ claude plugin install cc-best-config
 | **baoyu-image-gen** | 通过 OpenAI、Google、OpenRouter、DashScope、ModelScope、即梦、豆包、Replicate 等 API 生成图片，支持参考图、比例和批量模式。 |
 | **tmux-orchestrator** | 通过 tmux 编排多个 CLI agent（Claude Code、Codex、Gemini 等）并行编程，使用 git worktree 隔离代码，自动分发任务、监控进度、合并结果。 |
 | **pragmatic-engineering** | 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），简单任务快速完成，复杂特性获得完整的设计与评审流程。 |
+| **image-gen** | 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64 编码、face 编辑、比例和分辨率控制。 |
 
 ## 使用说明
 
