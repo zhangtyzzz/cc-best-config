@@ -35,6 +35,7 @@ claude plugin install cc-best-config
 | **baoyu-image-gen** | Generate images through OpenAI, Google, OpenRouter, DashScope, ModelScope, Jimeng, Seedream, or Replicate APIs. Supports saved prompt files, references, aspect ratios, and batch mode. |
 | **tmux-orchestrator** | Orchestrate multiple CLI agents (Claude Code, Codex, Gemini, etc.) in parallel via tmux. Uses git worktrees for code isolation, distributes tasks, monitors progress, and merges results. |
 | **pragmatic-engineering** | Graded engineering discipline that right-sizes process to task complexity. Triages tasks into four levels (L0 direct execute → L3 subagent orchestration) so simple changes stay fast while complex features get proper design and review gates. |
+| **image-gen** | Universal AI image generation via any OpenAI-compatible API endpoint. First-class reference-image workflow: provide one or more reference images to generate new content that preserves the same visual style, character design, and IP consistency. Supports local files, face editing, aspect ratios, and resolutions up to 4K. |
 
 ## Notes
 
