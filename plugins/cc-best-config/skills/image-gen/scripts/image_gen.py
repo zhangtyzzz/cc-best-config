@@ -22,6 +22,7 @@ import os
 import sys
 import json
 import base64
+import time
 import mimetypes
 import argparse
 import requests
@@ -147,14 +148,22 @@ def save_base64_image(data_url: str, output_dir: str, index: int) -> Dict[str, s
     """Save a base64 data URL image to disk."""
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    filename = f"image_gen_{timestamp}_{index}.png"
-    filepath = Path(output_dir) / filename
 
-    # Strip data URL prefix if present
+    # Detect file extension from data URL mime type
+    ext = ".png"
     if "," in data_url:
+        header = data_url.split(",", 1)[0]  # e.g. "data:image/jpeg;base64"
         b64_data = data_url.split(",", 1)[1]
+        if "image/" in header:
+            mime_ext = header.split("image/")[1].split(";")[0].strip()
+            ext_map = {"jpeg": ".jpg", "png": ".png", "gif": ".gif",
+                       "webp": ".webp", "bmp": ".bmp"}
+            ext = ext_map.get(mime_ext, f".{mime_ext}")
     else:
         b64_data = data_url
+
+    filename = f"image_gen_{timestamp}_{index}{ext}"
+    filepath = Path(output_dir) / filename
 
     img_bytes = base64.b64decode(b64_data)
     with open(filepath, "wb") as f:
@@ -202,8 +211,16 @@ def run_generation(
         payload["image_config"] = image_config
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=180)
-        resp.raise_for_status()
+        # Retry once on rate-limit (429) or server error (5xx)
+        max_attempts = 2
+        for attempt in range(max_attempts):
+            resp = requests.post(url, headers=headers, json=payload, timeout=180)
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < max_attempts - 1:
+                time.sleep(5)
+                continue
+            resp.raise_for_status()
+            break
+
         data = resp.json()
 
         message = data.get("choices", [{}])[0].get("message", {})
