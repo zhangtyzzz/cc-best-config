@@ -34,6 +34,7 @@ claude plugin install cc-best-config
 | **baoyu-article-illustrator** | 分析文章结构，判断配图位置，并以 Type × Style 的方式生成风格统一的插图。 |
 | **baoyu-image-gen** | 通过 OpenAI、Google、OpenRouter、DashScope、ModelScope、即梦、豆包、Replicate 等 API 生成图片，支持参考图、比例和批量模式。 |
 | **tmux-orchestrator** | 通过 tmux 编排多个 CLI agent（Claude Code、Codex、Gemini 等）并行编程，使用 git worktree 隔离代码，自动分发任务、监控进度、合并结果。 |
+| **pragmatic-engineering** | 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），简单任务快速完成，复杂特性获得完整的设计与评审流程。 |
 
 ## 使用说明
 

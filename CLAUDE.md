@@ -40,6 +40,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **baoyu-article-illustrator** — 面向文章配图的工作流技能，先分析结构和配图位置，再用 Type × Style 模型产出一致风格的插图
 - **baoyu-image-gen** — 基于多家图像 API 的图片生成技能，支持参考图、比例控制、批量生成和基于保存 prompt 文件的稳定执行
 - **tmux-orchestrator** — 通过 tmux 编排多个 CLI agent（Claude Code、Codex、Gemini 等）并行编程，使用 git worktree 隔离代码，自动分发任务、监控进度、合并结果
+- **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 
 ## 文档同步约定
 
