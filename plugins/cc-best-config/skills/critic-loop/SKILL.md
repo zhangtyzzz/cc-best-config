@@ -1,23 +1,17 @@
 ---
 name: critic-loop
 description: >
-  Orchestrate a multi-agent quality loop: N Worker agents execute subtasks while a
-  dedicated Critic agent evaluates output against a rubric and drives iterative refinement
-  until all criteria pass. Use this skill for any non-trivial task where output quality
-  matters and a second-opinion review would improve results — research reports, technical
-  specs, code with design decisions, runbooks, RFCs, competitive analyses, and similar
-  deliverables. Trigger explicitly when the user mentions review, critic, or quality
-  ("有 review 机制", "加一个审查", "critic agent", "reviewer agent", "let another agent
-  review it", "让另一个 agent 来评估", "不要低估自己的输出", "quality gate",
-  "have it reviewed before delivering", "make sure the quality is high"). Also trigger
-  proactively when ALL of the following are true: (1) the task has multiple independent
-  quality dimensions (e.g. coverage AND accuracy AND structure), (2) the user has
-  indicated the output matters (deadline, stakeholder, integration), and (3) a missed gap
-  would require non-trivial rework. Do NOT trigger on routine multi-step tasks that lack
-  explicit quality stakes.
-  Do NOT use for tiny one-liner changes or simple questions.
-  Do NOT use when quality is measured by a scriptable numeric metric — use auto-research
-  instead (auto-research already has its own evaluation loop).
+  Run a worker critic quality loop for non-trivial deliverables. One or more Worker
+  agents produce drafts, then an independent Critic evaluates them against an explicit
+  rubric and drives revision until the output passes. Use when quality is judged by
+  criteria such as coverage, accuracy, depth, structure, or decision quality, especially
+  for research, specs, RFCs, runbooks, analyses, and code with meaningful design choices.
+  Trigger when the user asks for review, critique, a second opinion, a reviewer or critic
+  agent, a quality gate, or high-confidence output. Also trigger proactively when the task
+  has several quality dimensions, the result matters to stakeholders or integration, and
+  missing gaps would cause expensive rework. Do not use for tiny edits, simple questions,
+  or tasks optimized by scriptable numeric metrics; use auto-research for metric driven
+  loops.
 ---
 
 # Critic Loop

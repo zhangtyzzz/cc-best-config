@@ -1,15 +1,13 @@
 ---
 name: cli-agents
 description: >
-  Use any CLI-based AI agent (Codex, Gemini CLI, Claude CLI, OpenCode, etc.) as a
-  sub-agent directly via Bash exec mode — no tmux, no polling, no WORKER DONE
-  signals. The CLI tool runs to completion and exits; Claude reads the result
-  and proceeds immediately. Multiple agents can run in parallel as background
-  Bash tasks. Use this skill when the user wants to delegate subtasks to a
-  specific AI CLI tool, or when building a multi-agent pipeline where different
-  tools handle different steps. Trigger on: "用 Codex 来做", "让 Gemini 处理",
-  "起几个子 Agent", "parallel agents", "delegate to codex", any request to
-  orchestrate multiple AI CLI tools.
+  Use CLI based AI tools such as Codex, Gemini CLI, Claude CLI, or OpenCode as
+  sub agents through direct Bash exec. Each agent runs to completion, writes its
+  result, and exits, so there is no tmux, polling, or session bookkeeping. Use
+  this skill when the user wants to delegate work to a specific AI CLI, run
+  several agents in parallel, or build a multi agent pipeline with different
+  tools handling different steps. Trigger on requests like "用 Codex 来做", "让
+  Gemini 处理", "起几个子 Agent", "parallel agents", or "delegate to codex".
 ---
 
 # CLI Agents — Any CLI Tool as a Sub-Agent

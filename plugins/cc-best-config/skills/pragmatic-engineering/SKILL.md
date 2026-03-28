@@ -1,6 +1,6 @@
 ---
 name: pragmatic-engineering
-description: Help users plan and approach non-trivial coding tasks. Use this skill when a user needs to figure out how to tackle a coding challenge — planning a migration or refactor, choosing between architectural approaches, structuring a new project, reviewing whether their current engineering approach is sound, breaking down complex multi-file changes into safe steps, or deciding on implementation strategy for a significant feature. Triggers on explicit requests ("plan this", "break this down", "how should I approach", "design this feature", "review my approach", "帮我规划", "怎么分步骤做") and on implicit planning needs: when someone describes a complex engineering situation and asks for direction, weighs tradeoffs between approaches, or needs a step-by-step strategy for risky changes. Does NOT trigger for simple scripts, single-file fixes, data analysis, or questions needing only a direct answer.
+description: Help users plan non-trivial engineering work before implementation. Use when the task involves migrations, refactors, architecture choices, project structure, risky multi-file changes, or feature strategy. Trigger on explicit requests such as "plan this", "break this down", "how should I approach", "design this feature", "review my approach", "帮我规划", or "怎么分步骤做", and also when the user presents a complex coding situation with real tradeoffs and needs safe sequencing. Do not use for simple scripts, isolated one file fixes, data analysis, or questions that only need a direct answer.
 ---
 
 # Pragmatic Engineering
