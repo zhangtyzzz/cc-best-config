@@ -10,9 +10,11 @@ description: >
   ("有 review 机制", "加一个审查", "critic agent", "reviewer agent", "let another agent
   review it", "让另一个 agent 来评估", "不要低估自己的输出", "quality gate",
   "have it reviewed before delivering", "make sure the quality is high"). Also trigger
-  proactively for complex multi-part tasks where a single-pass result is likely to miss
-  something important — if you're about to produce a substantial deliverable and
-  independent evaluation would catch gaps, use this skill.
+  proactively when ALL of the following are true: (1) the task has multiple independent
+  quality dimensions (e.g. coverage AND accuracy AND structure), (2) the user has
+  indicated the output matters (deadline, stakeholder, integration), and (3) a missed gap
+  would require non-trivial rework. Do NOT trigger on routine multi-step tasks that lack
+  explicit quality stakes.
   Do NOT use for tiny one-liner changes or simple questions.
   Do NOT use when quality is measured by a scriptable numeric metric — use auto-research
   instead (auto-research already has its own evaluation loop).
@@ -44,10 +46,11 @@ into actionable revision instructions.
 ```
 You (Orchestrator)
     │
-    ├─── Worker w1   ── executes subtask A
-    ├─── Worker w2   ── executes subtask B  (add more as needed)
-    │         ↓
-    └─── Critic       ── evaluates ALL worker output against rubric
+    ├─── Worker w1   ── executes subtask A ──┐
+    ├─── Worker w2   ── executes subtask B ──┤ (all output combined)
+    │    ...                                 │
+    └─── Critic  ←──────────────────────────┘
+              ── evaluates ALL worker output against rubric
                               ↓
                     PASS → deliver  |  FAIL → bridge feedback → Workers revise
 ```
@@ -130,8 +133,9 @@ Branch: <branch>
 
 ## Phase 3: Prime the Critic
 
-Send the Critic its evaluation context. Do this while Workers are running (or right when
-they signal done) so the Critic is ready to evaluate without delay.
+Send the Critic its evaluation context **while Workers are still running** — there is no
+need to wait for them. Priming the Critic in parallel means it is ready the moment Workers
+finish, with no idle gap between Phase 2 and Phase 4.
 
 ```
 You are an independent reviewer. Your job is to find gaps and weaknesses — not to be
@@ -171,11 +175,18 @@ each window in a loop:
 
 ```bash
 # Poll all worker windows until each prints WORKER DONE
-# Adjust the window list to match your actual workers (e.g., "w1" for a single worker, "w1 w2 w3" for three)
+# Adjust the window list to match your actual workers (e.g., "w1" for one, "w1 w2 w3" for three)
+MAX_POLLS=60  # 60 × 10s = 10 min timeout per worker; adjust as needed
 for win in w1 w2; do
+  polls=0
   while true; do
-    output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:${win} --lines 50)
+    output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 50)
     echo "${output}" | grep -q "WORKER DONE" && break
+    polls=$((polls + 1))
+    if [ "${polls}" -ge "${MAX_POLLS}" ]; then
+      echo "ERROR: worker ${win} timed out — escalate to user before continuing"
+      exit 1
+    fi
     sleep 10
   done
 done
@@ -185,8 +196,9 @@ Only after all Workers are done, collect their output (read committed files or t
 output) and send the combined result to the Critic:
 
 ```bash
-"${TMUX_SCRIPTS}/worker-send.sh" critic-<task-name>:critic \
-  "Here is the Worker output for evaluation:\n\n<worker output>"
+# Note: worker-send.sh passes the string as-is to tmux; use printf for reliable newlines
+printf 'Here is the Worker output for evaluation:\n\n%s' "<worker output>" | \
+  "${TMUX_SCRIPTS}/worker-send.sh" "critic-<task-name>:critic"
 ```
 
 Read the Critic's verdict:
@@ -197,17 +209,34 @@ Read the Critic's verdict:
 
 ## Phase 5: Feedback Bridge (on FAIL)
 
-Never forward the Critic's raw verdict to the Worker. Translate it into a clean revision
-prompt. The Worker needs concrete direction, not a judgment.
+Never forward the Critic's raw verdict to Workers. Translate it into clean revision
+prompts. Workers need concrete direction, not a judgment.
+
+**Multi-worker routing**: When multiple Workers each own a distinct subtask, map each
+failing criterion back to the Worker responsible for it. Only that Worker receives a
+revision prompt; Workers whose subtasks fully passed are not disturbed.
+
+```
+# For each Worker whose subtask has failing criteria:
+Worker <wN> is responsible for: <subtask description>
+Failing criteria that fall within their scope: <list>
+→ send them a targeted revision prompt
+
+# For Workers whose subtask fully passed:
+→ no action; they are done
+```
+
+Revision prompt template (one per affected Worker):
 
 ```
 Your previous draft was reviewed and did not pass quality review.
 
 ## What needs to change
-<translate each REQUIRED IMPROVEMENT into a specific, actionable directive>
+<translate each REQUIRED IMPROVEMENT that falls within your scope into a specific,
+actionable directive>
 
 ## What to preserve
-<list the criteria that PASSED — do not change these>
+<list the criteria that PASSED within your scope — do not change these>
 
 ## Instructions
 - Address every issue listed above
@@ -215,14 +244,14 @@ Your previous draft was reviewed and did not pass quality review.
 - Commit your revised output and output "WORKER DONE" again
 ```
 
-Then repeat from Phase 4.
+Then repeat from Phase 4 (polling only the Workers that were asked to revise).
 
 ## Stop Conditions
 
 | Condition | Action |
 |---|---|
 | Critic returns `VERDICT: PASS` | Proceed to Phase 6 |
-| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then run `worker-teardown.sh` for all windows to avoid session leak. |
+| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then teardown: `"${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name>` |
 | Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch, not an execution problem |
 | Worker blocked on a specific issue | Escalate to user for clarification |
 
@@ -236,7 +265,7 @@ When all Workers pass the Critic:
 
 1. Merge Worker branches using tmux-orchestrator's Phase 5 merge strategy
 2. Run any available verification (tests, linting)
-3. Clean up workers and worktrees with `worker-teardown.sh`
+3. Clean up workers and worktrees: `"${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name>`
 4. Deliver final output with a quality summary:
 
 ```
@@ -268,3 +297,7 @@ Translate criticism into actionable direction — the Worker should feel instruc
 
 **Escalate early.** Two consecutive rounds with the same failing criterion → it's a scope
 or rubric problem. Ask the user before iterating further.
+
+**Track iteration count.** Maintain a counter in your working notes (e.g., "Iteration 1/3").
+Increment it every time you send Workers back for revision. Enforce the max-iterations stop
+condition yourself — do not rely on memory across a long session.
