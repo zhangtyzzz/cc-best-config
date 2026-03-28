@@ -30,7 +30,7 @@ satisfied.
 
 Workers and Critic are either:
 - **Native Claude sub-agents** (via the `Agent` tool) — default, simplest
-- **External CLI agents** (Codex, Gemini, Claude CLI, aider) via the `cli-agents` skill
+- **External CLI agents** (Codex, Gemini CLI, Claude CLI, OpenCode) via the `cli-agents` skill
 
 Use CLI agents when the user explicitly specifies one ("用 Codex 来跑", "让 Gemini 评审").
 Otherwise, use Claude sub-agents or evaluate directly — no extra process needed.
@@ -48,20 +48,32 @@ Otherwise, use Claude sub-agents or evaluate directly — no extra process neede
 ```
 You (Orchestrator)
     │
-    ├── Bash → CLI agent exec "task A" → /tmp/w1.md   (background, parallel)
-    ├── Bash → CLI agent exec "task B" → /tmp/w2.md   (background, parallel)
-    │         Each process exits when done; Claude notified immediately.
+    ├── Worker 1 [native sub-agent or CLI exec] → output A  ┐
+    ├── Worker 2 [native sub-agent or CLI exec] → output B  ┘ (parallel)
     │
-    └── Critic evaluation (Claude itself, or another CLI agent exec)
+    └── Critic [self-evaluate or separate agent/model]
               ↓
-        PASS → deliver  |  FAIL → inject output + feedback → re-run workers
+        PASS → deliver  |  FAIL → inject previous output + feedback → re-run workers
 ```
+
+**Native sub-agent**: use your orchestrator's built-in sub-agent capability
+(e.g., Agent tool in Claude Code, sub-session in Codex). Output is returned
+directly — no files, no polling.
+
+**CLI exec**: run any AI CLI tool via `codex exec`, `gemini -p`, `claude -p`, etc.
+Output goes to a file; orchestrator reads it after the process exits.
+
+Keep process files separate from deliverables. Worker drafts, prompts, critic
+verdicts, and feedback notes should live in a dedicated run directory. Only the
+final accepted deliverable should be written to the user-facing destination.
 
 You own the loop. Workers execute; Critic evaluates; you bridge feedback between them.
 
 ## Phase 0: Define the Task and Rubric
 
-Before starting, clarify two things.
+Before starting, clarify two things. For tasks where the scope isn't fully
+specified, propose the decomposition and rubric to the user before launching
+workers — it's cheap to adjust before work starts, expensive after.
 
 **Task decomposition**: Break the request into subtasks. Identify which can run in
 parallel (independent outputs) vs. sequential (B depends on A's output).
@@ -82,19 +94,20 @@ Example rubric for a research task:
 **Do not tell workers about the Critic or the rubric** — evaluator independence requires
 workers to produce their best effort without gaming the criteria.
 
-### Option A — Native Claude sub-agents (default)
+### Option A — Native sub-agents (default)
 
-Use the `Agent` tool. Claude blocks until the sub-agent completes and returns the result
-directly — no Bash, no files, no polling.
+Use your orchestrator's built-in sub-agent capability. In Claude Code, this is
+the `Agent` tool; in Codex, start a sub-session. The sub-agent completes and
+returns output directly — no Bash, no files, no polling.
 
 ```
-Agent tool call:
+Sub-agent call:
   prompt: "Your task: <subtask>. Requirements: <...>. Return your complete output."
   run_in_background: true  ← for parallel workers
 ```
 
-Results are returned in the Agent tool response. For parallel workers, spawn multiple
-Agent calls simultaneously; Claude receives each result as it completes.
+For parallel workers, spawn multiple sub-agent calls simultaneously. Each
+result arrives as the corresponding sub-agent completes.
 
 ### Option B — External CLI agents (when user specifies: "用 Codex", "让 Gemini 跑")
 
@@ -102,31 +115,37 @@ Use the `cli-agents` skill pattern. Write the prompt to a temp file, invoke the 
 read the output file.
 
 ```bash
-cat > /tmp/w1-prompt.txt << 'EOF'
+RUN_DIR=$(mktemp -d /tmp/critic-loop-run-XXXXXX)
+
+cat > "$RUN_DIR/w1-prompt.txt" << EOF
 Your task: <specific subtask>
 Requirements: <...>
-Save output to /tmp/w1-output.md when complete.
+Save output to $RUN_DIR/w1-output.md when complete.
+Treat that file as a working draft, not the final user delivery artifact.
 EOF
 
-codex exec --full-auto -C /path/to/workdir "$(cat /tmp/w1-prompt.txt)"
+codex exec --full-auto -C /path/to/worker-1-worktree "$(cat "$RUN_DIR/w1-prompt.txt")"
 # run_in_background: true  ← for parallel workers
 ```
 
-See `cli-agents` skill for Gemini, Claude CLI, and aider syntax.
+For code-producing parallel workers, give each CLI agent its own worktree or
+isolated checkout. See `cli-agents` skill for Codex, Gemini CLI, Claude CLI,
+and OpenCode syntax.
 
 Independent workers run in parallel (background calls); sequential workers run one after
 another (synchronous calls).
 
-## Phase 2: Prime the Critic
+## Phase 2: Prepare the Critic
 
-Prime the Critic **while workers are running** — no need to wait. The Critic is:
+The Critic is:
 
-- **Claude itself** (default): evaluate worker output directly. Most efficient.
+- **Self-evaluation** (default): after workers finish, evaluate output directly
+  using the rubric. No extra agent needed. Skip the template below.
 - **A separate CLI agent** (when user specifies: "用 Codex 评审", "让 Gemini 来判断"):
-  run `codex exec` / `gemini` with the critic prompt after workers finish. This provides
-  the strongest evaluator independence (different model, different context entirely).
+  run `codex exec` / `gemini` with the critic prompt. This provides the strongest
+  evaluator independence (different model, different context entirely).
 
-Critic prompt template (used in Phase 3):
+For the CLI agent path, prepare the critic prompt template in advance:
 
 ```
 You are an independent reviewer. Your job is to find gaps and weaknesses — not to be
@@ -159,29 +178,38 @@ If any single criterion fails, overall verdict must be FAIL. When in doubt, FAIL
 
 ## Phase 3: Collect Output and Evaluate
 
-Wait for all background worker tasks to complete (Claude is notified as each finishes),
-then read their output files and run the critic.
+Wait for all worker tasks to complete, then evaluate against the rubric.
+
+### Option A — self-evaluation (default)
+
+For native sub-agents: results are in the tool responses. Read them and apply
+the rubric directly. No file I/O needed.
+
+For CLI workers: read the output files, then evaluate:
 
 ```bash
-# Read all worker outputs
-W1=$(cat /tmp/w1-output.md 2>/dev/null || echo "ERROR: w1 output missing")
-W2=$(cat /tmp/w2-output.md 2>/dev/null || echo "ERROR: w2 output missing")
-
+W1=$(cat "$RUN_DIR/w1-output.md" 2>/dev/null || echo "ERROR: w1 output missing")
+W2=$(cat "$RUN_DIR/w2-output.md" 2>/dev/null || echo "ERROR: w2 output missing")
 echo "W1 length: ${#W1} chars"
 echo "W2 length: ${#W2} chars"
 ```
 
-**Option A — Claude evaluates directly** (default):
-Read the worker outputs and apply the rubric yourself. Produce the VERDICT format above.
+Apply the rubric yourself and produce the VERDICT format from Phase 2.
 
-**Option B — separate critic agent**:
+### Option B — separate critic agent
+
+Reference worker output files by path — don't embed their content inline to
+avoid shell expansion issues:
+
 ```bash
-cat > /tmp/critic-prompt.txt << EOF
-[paste critic prompt template with worker outputs injected]
+cat > "$RUN_DIR/critic-prompt.txt" << 'EOF'
+[paste critic prompt template here]
 EOF
+# Append worker outputs by file reference in the prompt, or tell the agent to read them:
+# "Read $RUN_DIR/w1-output.md and $RUN_DIR/w2-output.md, then evaluate against the rubric."
 
-codex exec --full-auto "$(cat /tmp/critic-prompt.txt)" -o /tmp/verdict.txt
-cat /tmp/verdict.txt
+codex exec --full-auto -o "$RUN_DIR/verdict.txt" "$(cat "$RUN_DIR/critic-prompt.txt")"
+cat "$RUN_DIR/verdict.txt"
 ```
 
 ## Phase 4: Feedback Bridge (on FAIL)
@@ -192,30 +220,19 @@ Workers need direction, not judgment.
 **Map failing criteria to responsible workers.** Only send revision prompts to workers
 whose subtask has failing criteria. Workers whose subtasks fully passed are done.
 
-Revision prompt template:
+Revision prompt — reference previous output by file path to avoid shell
+expansion issues with agent-generated content:
 
 ```bash
-CURRENT_OUTPUT=$(cat /tmp/w1-output.md)
-
-cat > /tmp/w1-revision.txt << EOF
-Your previous draft needs revision.
-
-Here is what you wrote:
---- PREVIOUS OUTPUT ---
-${CURRENT_OUTPUT}
---- END ---
-
-What needs to change:
+# Write the feedback to a file
+cat > "$RUN_DIR/w1-feedback.txt" << 'EOF'
 - <specific improvement 1 from critic>
 - <specific improvement 2 from critic>
-
-What to preserve (do not change):
-- <criteria that passed>
-
-Save the revised output to /tmp/w1-output.md (overwrite).
 EOF
 
-codex exec --full-auto -C /path/to/workdir "$(cat /tmp/w1-revision.txt)"
+# Tell the worker to read its own previous output and the feedback
+codex exec --full-auto -C /path/to/workdir \
+  "Read $RUN_DIR/w1-output.md (your previous draft) and $RUN_DIR/w1-feedback.txt (what needs to change). Revise the draft to address all feedback. Preserve everything that already works. Overwrite $RUN_DIR/w1-output.md when done."
 ```
 
 Then repeat Phase 3 (collect + evaluate) for the revised output.
@@ -262,6 +279,11 @@ doubt, FAIL — erring toward quality is the point of this role."
 
 **Bridge, don't relay.** Never dump raw critic output into the worker prompt. Translate
 criticism into specific, actionable directives. Workers should feel instructed, not judged.
+
+**Keep run artifacts contained.** Use a dedicated run directory such as
+`/tmp/critic-loop-run-<timestamp>/` for prompts, draft outputs, verdicts, and
+feedback. Do not scatter process files through the project root. Only publish
+the final accepted artifact to the destination the user asked for.
 
 **Carry context explicitly.** Neither CLI agents nor native sub-agents retain state between
 calls. Always inject the previous output into revision prompts.

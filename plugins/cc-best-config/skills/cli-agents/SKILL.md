@@ -1,7 +1,7 @@
 ---
 name: cli-agents
 description: >
-  Use any CLI-based AI agent (Codex, Gemini, Claude CLI, aider, etc.) as a
+  Use any CLI-based AI agent (Codex, Gemini CLI, Claude CLI, OpenCode, etc.) as a
   sub-agent directly via Bash exec mode — no tmux, no polling, no WORKER DONE
   signals. The CLI tool runs to completion and exits; Claude reads the result
   and proceeds immediately. Multiple agents can run in parallel as background
@@ -17,6 +17,11 @@ description: >
 The simplest possible sub-agent pattern: run a CLI AI tool in non-interactive
 (exec) mode via Bash. The process exits when done. No tmux, no polling, no
 session management. Results go to a file; Claude reads the file and continues.
+
+Keep process files separate from deliverables. Prompts, intermediate outputs,
+critic notes, logs, and revision instructions belong in a dedicated run
+directory. Only the final user-facing artifact should be written to the target
+path the user actually asked for.
 
 ```
 Main Claude (Orchestrator)
@@ -63,13 +68,12 @@ claude -p "Your task prompt" > /tmp/output.txt 2>&1
 claude -p "Your task" --allowedTools "Bash,Read,Write" > /tmp/output.txt 2>&1
 ```
 
-### aider
+### OpenCode
 ```bash
-aider --message "Your task" \
-  --yes-always \
-  --no-pretty \
-  --model gpt-4o \
-  2>&1 | tee /tmp/output.txt
+opencode run "Your task prompt" > /tmp/output.txt 2>&1
+
+# With a specific model:
+opencode run --model anthropic/claude-sonnet-4-5 "Your task" > /tmp/output.txt 2>&1
 ```
 
 ## Core Pattern: Single Sub-Agent (Synchronous)
@@ -78,17 +82,20 @@ For a single delegated task, run synchronously — Claude blocks until the CLI
 tool finishes, then immediately reads the result. No polling needed.
 
 ```bash
+RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
+
 # Step 1: Write the prompt to a file (avoids shell quoting issues for long prompts)
-cat > /tmp/task-prompt.txt << 'EOF'
+cat > "$RUN_DIR/task-prompt.txt" << EOF
 Your detailed task description here.
-Save output to /tmp/result.md when done.
+Write any scratch output to $RUN_DIR/result.md.
+Do not write the final deliverable anywhere else unless explicitly requested.
 EOF
 
 # Step 2: Run the CLI agent synchronously
-codex exec --full-auto -C /path/to/workdir "$(cat /tmp/task-prompt.txt)"
+codex exec --full-auto -C /path/to/workdir "$(cat "$RUN_DIR/task-prompt.txt")"
 
-# Step 3: Read the result
-cat /tmp/result.md
+# Step 3: Read the process output, then decide what to deliver
+cat "$RUN_DIR/result.md"
 ```
 
 Claude naturally proceeds after the Bash call returns. No WORKER DONE signal,
@@ -100,16 +107,29 @@ For independent subtasks, run as background Bash tasks. Claude is notified
 when each one completes. Fast workers are detected immediately — a 2-minute
 worker doesn't wait for a 10-minute worker.
 
+If workers may edit files, give each one its own worktree or workdir first.
+Do not run parallel code-producing agents against the same checkout.
+
 ```bash
+RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
+
+# Example: create isolated worktrees for code-producing workers
+WT_A=$(mktemp -d /tmp/cli-agent-wt-a-XXXXXX)
+WT_B=$(mktemp -d /tmp/cli-agent-wt-b-XXXXXX)
+git worktree add "$WT_A" HEAD
+git worktree add "$WT_B" HEAD
+
 # Launch all workers in parallel (each is a separate background Bash call)
 # Claude tool call 1 (run_in_background: true):
-codex exec --full-auto -C /workdir "Task A: research X. Save to /tmp/w1.md"
+codex exec --full-auto -C "$WT_A" \
+  "Task A: implement X in this worktree. Save a short summary to $RUN_DIR/w1.md"
 
 # Claude tool call 2 (run_in_background: true):
-codex exec --full-auto -C /workdir "Task B: research Y. Save to /tmp/w2.md"
+codex exec --full-auto -C "$WT_B" \
+  "Task B: implement Y in this worktree. Save a short summary to $RUN_DIR/w2.md"
 
 # Claude tool call 3 (run_in_background: true):
-gemini -p "Task C: analyze Z. Save to /tmp/w3.md" > /dev/null 2>&1
+gemini -p "Task C: analyze Z. Save to $RUN_DIR/w3.md" > "$RUN_DIR/w3-gemini.log" 2>&1
 ```
 
 Each background task fires a completion notification the moment its CLI process
@@ -120,9 +140,9 @@ all required tasks are done.
 
 ```bash
 # After receiving all background notifications, read results:
-W1=$(cat /tmp/w1.md 2>/dev/null || echo "w1 missing")
-W2=$(cat /tmp/w2.md 2>/dev/null || echo "w2 missing")
-W3=$(cat /tmp/w3.md 2>/dev/null || echo "w3 missing")
+W1=$(cat "$RUN_DIR/w1.md" 2>/dev/null || echo "w1 missing")
+W2=$(cat "$RUN_DIR/w2.md" 2>/dev/null || echo "w2 missing")
+W3=$(cat "$RUN_DIR/w3.md" 2>/dev/null || echo "w3 missing")
 echo "=== W1 ===" && echo "$W1"
 echo "=== W2 ===" && echo "$W2"
 echo "=== W3 ===" && echo "$W3"
@@ -130,38 +150,34 @@ echo "=== W3 ===" && echo "$W3"
 
 ## Core Pattern: Revision Loop (Multi-Round)
 
-When output needs revision, pass the previous output explicitly in the new
-prompt. The CLI tool doesn't retain state between calls — context is carried
-by the orchestrator (Claude) and injected into each new prompt.
+When output needs revision, reference the previous output by file path and
+pass the critic feedback by file too. The CLI tool doesn't retain state between
+calls — context is carried by the orchestrator and injected into each new prompt.
 
 ```bash
+RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
+
 # Round 1
 codex exec --full-auto -C /workdir \
-  "Write a report on X. Save to /tmp/report.md."
+  "Write a report on X. Save the draft to $RUN_DIR/report.md."
 
-# Read result + critic feedback (from Claude's own evaluation or another agent)
-CURRENT_REPORT=$(cat /tmp/report.md)
-CRITIC_FEEDBACK="Section 2 lacks citations. Add at least 3 sources."
-
-# Round 2 — inject previous output + feedback into new prompt
-cat > /tmp/revision-prompt.txt << EOF
-Here is the current draft of the report:
-
---- CURRENT DRAFT ---
-${CURRENT_REPORT}
---- END DRAFT ---
-
-The following issues need to be fixed:
-${CRITIC_FEEDBACK}
-
-Rewrite the report addressing all issues. Save the revised version to /tmp/report.md.
+# Round 2 — reference the previous output file and feedback file
+cat > "$RUN_DIR/feedback.txt" << 'EOF'
+Section 2 lacks citations. Add at least 3 sources.
 EOF
 
-codex exec --full-auto -C /workdir "$(cat /tmp/revision-prompt.txt)"
+codex exec --full-auto -C /workdir \
+  "Read $RUN_DIR/report.md and $RUN_DIR/feedback.txt. Revise the report to address all feedback. Overwrite $RUN_DIR/report.md when done."
 ```
 
-For large files, save the previous output to a known path and tell the agent
-to read it: `"Read /tmp/report.md, then revise it to fix: [issues]. Overwrite the file."`
+**Why reference by file path instead of embedding the content:**
+Embedding `$(cat "$RUN_DIR/report.md")` inside a shell heredoc risks executing
+`$(...)` expressions that appear in the agent's output. File references avoid
+this entirely and work for any output size.
+
+The same rule applies to feedback: avoid `${CRITIC_FEEDBACK}` or other shell
+interpolation for model-generated text, because command substitutions and
+backticks inside the feedback can execute locally before the CLI starts.
 
 ## Integrating with Critic Loop
 
@@ -169,51 +185,38 @@ Replace the tmux-based worker/critic infrastructure with CLI agent calls:
 
 ```
 Phase 1: spawn workers (parallel background Bash calls)
-  → codex exec "task A" -o /tmp/w1.md   [run_in_background: true]
-  → codex exec "task B" -o /tmp/w2.md   [run_in_background: true]
+  → codex exec "task A" -o <run-dir>/w1.md   [run_in_background: true]
+  → codex exec "task B" -o <run-dir>/w2.md   [run_in_background: true]
 
 Phase 2: wait for notifications, collect output
-  → cat /tmp/w1.md && cat /tmp/w2.md
+  → cat <run-dir>/w1.md && cat <run-dir>/w2.md
 
 Phase 3: critic (synchronous — Claude itself, or another CLI agent)
   Option A: Claude evaluates directly (no sub-agent needed)
-  Option B: codex exec "evaluate this output against rubric: ..." -o /tmp/verdict.txt
+  Option B: codex exec "evaluate this output against rubric: ..." -o <run-dir>/verdict.txt
 
 Phase 4: if FAIL → revision round (pass current output + feedback to new exec)
 Phase 5: repeat until PASS or max iterations
 ```
-
-## When to Use tmux Instead
-
-The exec pattern covers most cases. Use tmux (via tmux-orchestrator skill)
-only when:
-
-1. **Session continuity matters**: the agent needs to remember its own tool call
-   history across multiple revision rounds — not just the text output, but *what
-   commands it ran and what it saw*. Passing large tool histories via prompt is
-   impractical.
-
-2. **Real-time user visibility**: the user explicitly wants to watch the agent
-   work in a live terminal window.
-
-3. **Interactive back-and-forth**: the task requires many small exchanges with
-   the agent rather than one big prompt → result cycle.
-
-For research, writing, code generation, and most automation tasks: exec mode
-is simpler and sufficient.
 
 ## Orchestrator Rules
 
 **Use output files, not stdout parsing.** Tell the agent to save results to a
 specific path. Read that path after the call. Parsing terminal output is fragile.
 
+**Separate process files from deliverables.** Create one run directory per
+orchestration attempt, such as `/tmp/cli-agent-run-<timestamp>/`, and keep
+prompts, logs, worker drafts, critic verdicts, and feedback files there. Only
+copy or write the final accepted artifact to the user-requested destination.
+
 **Write prompts to temp files for long tasks.** Shell quoting breaks on complex
 multi-line prompts. `cat > /tmp/prompt.txt << 'EOF' ... EOF` then pass
 `"$(cat /tmp/prompt.txt)"` to the CLI tool.
 
 **One working directory per agent.** Use `-C /path` (codex) or `cd` to isolate
-each agent's file operations. Agents writing to the same directory concurrently
-can conflict.
+each agent's file operations. For parallel code edits, create one git worktree
+or equivalent isolated checkout per worker. Agents writing to the same
+directory concurrently can conflict and corrupt the shared state.
 
 **Claude is the critic by default.** For the evaluation step, Claude can evaluate
 worker output directly — no need to spawn a separate critic agent. Only spawn a

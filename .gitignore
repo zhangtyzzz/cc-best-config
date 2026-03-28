@@ -22,3 +22,6 @@ node_modules/
 *.tmp
 *.log
 temp/
+
+# Skill eval / benchmark workspaces
+*-workspace/
