@@ -42,6 +42,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **tmux-orchestrator** — 通过 tmux 编排多个 CLI agent（Claude Code、Codex、Gemini 等）并行编程，使用 git worktree 隔离代码，自动分发任务、监控进度、合并结果
 - **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
+- **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；基于 tmux-orchestrator 基础设施。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
 
 ## 文档同步约定
 
