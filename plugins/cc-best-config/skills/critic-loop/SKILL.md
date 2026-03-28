@@ -196,44 +196,44 @@ When in doubt, FAIL — erring toward quality is the point of this role.
 
 ### Polling strategy
 
-Run the poll loop as a **background Bash task** (set `run_in_background: true` on the
-Bash tool call). This lets Claude stop blocking and get notified when workers finish,
-rather than sleeping in a loop.
+Run the poll loop as a **synchronous blocking Bash call** with `timeout: 600000`
+(10 minutes). Claude waits, workers finish, Claude immediately proceeds to the next
+step — the user does not need to do anything.
+
+If workers may take longer than 10 minutes, call the poll in multiple sequential
+10-minute chunks until all workers are done.
 
 ```bash
-# BACKGROUND TASK: poll all workers until each signals WORKER DONE
-# Run this with run_in_background: true so Claude is notified on completion.
-#
-# IMPORTANT — notification timing:
-#   The "task complete" notification appears in Claude's context on the NEXT
-#   user message turn after the task finishes. For tasks > ~5 min, ask the user
-#   to send a message like "done?" when they see the workers finish in tmux.
-#   For tasks < 5 min, the notification usually fires within the same turn.
-#
-# WARNING: do NOT run a manual poll simultaneously — two concurrent pollers
-#          will both send to the same tmux pane and corrupt the session.
+# SYNCHRONOUS POLL — run with timeout: 600000 (10 min max per call)
+# Claude blocks here, then proceeds automatically when all workers are done.
+# Do NOT use run_in_background: true — that requires a user message to deliver
+# the notification, making Claude dependent on the user to drive the loop.
 
 POLL_STATUS_FILE="/tmp/critic-<task-name>-done.txt"
-MAX_POLLS=120  # 120 × 15s = 30 min total timeout
+declare -A done_workers
 
 for win in w1 w2; do
+  # Skip windows already confirmed done (for multi-chunk runs)
+  [[ "${done_workers[$win]:-}" == "1" ]] && continue
+
   polls=0
+  MAX_POLLS=40  # 40 × 15s = 10 min per worker (matches bash timeout: 600000)
   echo "Polling ${win}..."
   while true; do
     output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 80)
 
-    # WORKER DONE detection — must appear AFTER the codex separator line (────)
-    # This avoids false positives from the prompt text itself containing "WORKER DONE".
-    # The separator appears after the agent's final response block.
+    # WORKER DONE detection — only match after the codex separator line (────)
+    # to avoid false positives from the prompt text containing "WORKER DONE".
     after_separator=$(echo "${output}" | awk '/^────/{found=1} found{print}')
     if echo "${after_separator}" | grep -q "WORKER DONE"; then
-      echo "${win}: DONE" | tee -a "$POLL_STATUS_FILE"
+      echo "${win}: DONE"
+      done_workers[$win]="1"
       break
     fi
 
-    # Auto-approve tool confirmations — ONLY when NOT using codex --full-auto or -a never.
-    # When using codex --full-auto, omit this block entirely; sending unsolicited
-    # keys to a codex session causes the "y → WORKER DONE → y → WORKER DONE" loop.
+    # Auto-approve tool confirmations — ONLY for non-codex agents (claude, gemini).
+    # OMIT this block when using 'codex --full-auto'; unsolicited keys cause
+    # the "y → WORKER DONE → y → WORKER DONE" loop.
     # if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
     #   "${TMUX_SCRIPTS}/worker-approve.sh" "critic-<task-name>:${win}" y
     #   sleep 2; continue
@@ -241,23 +241,23 @@ for win in w1 w2; do
 
     polls=$((polls + 1))
     if [ "${polls}" -ge "${MAX_POLLS}" ]; then
-      echo "ERROR: worker ${win} timed out after $((MAX_POLLS * 15))s" | tee -a "$POLL_STATUS_FILE"
+      echo "${win}: still running after 10 min — will re-poll next chunk"
       break
     fi
     sleep 15
   done
 done
 
-echo "ALL_WORKERS_DONE" >> "$POLL_STATUS_FILE"
+# Report which workers are still pending (orchestrator will re-poll if needed)
+for win in w1 w2; do
+  [[ "${done_workers[$win]:-}" != "1" ]] && echo "STILL_PENDING: ${win}"
+done
+echo "POLL_CHUNK_COMPLETE"
 ```
 
-After launching the background task:
-- For short tasks (< 5 min): Claude is notified automatically on the next turn.
-- For long tasks (> 5 min): ask the user to send a message when they see workers finish
-  in their tmux window. The background task status file at `$POLL_STATUS_FILE` always
-  has the ground truth.
-
-**Do not** run manual `worker-read.sh` checks while the background poll is running.
+After each call, check the output for `STILL_PENDING` lines. If any workers are still
+running, call the same poll again (Claude orchestrates as many chunks as needed).
+Only proceed to the Critic once all workers report `DONE`.
 
 ### Send output to Critic
 
