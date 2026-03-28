@@ -75,7 +75,10 @@ try {
 
   document.getElementById("status").textContent = "exporting";
 
-  const data = JSON.parse(atob(document.getElementById("excalidraw-data").textContent));
+  // Decode Base64 as UTF-8 bytes; plain atob() corrupts non-Latin-1 text.
+  const raw = document.getElementById("excalidraw-data").textContent;
+  const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+  const data = JSON.parse(new TextDecoder("utf-8").decode(bytes));
   const scale = ${scale};
 
   const blob = await exportToBlob({
