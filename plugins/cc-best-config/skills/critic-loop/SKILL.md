@@ -201,8 +201,10 @@ Bash tool call). This lets Claude stop blocking and get notified when workers fi
 rather than sleeping in a loop.
 
 ```bash
-# BACKGROUND TASK: poll all workers, handle approvals, write status to a file
+# BACKGROUND TASK: poll all workers until each signals WORKER DONE
 # Run this with run_in_background: true so Claude is notified on completion
+# WARNING: do NOT run a manual poll simultaneously — two concurrent pollers
+#          will both send to the same tmux pane and corrupt the session.
 
 POLL_STATUS_FILE="/tmp/critic-<task-name>-done.txt"
 MAX_POLLS=120  # 120 × 15s = 30 min total timeout
@@ -213,20 +215,19 @@ for win in w1 w2; do
   while true; do
     output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 80)
 
-    # Check for completion
+    # Check for completion — always check this FIRST and break immediately
     if echo "${output}" | grep -q "^WORKER DONE$"; then
       echo "${win}: DONE" | tee -a "$POLL_STATUS_FILE"
       break
     fi
 
-    # Auto-approve common tool confirmations so workers don't stall
-    # (skip this block if using 'codex -a never' or 'codex --full-auto')
-    if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
-      echo "${win}: [auto-approve] detected approval prompt, sending y"
-      "${TMUX_SCRIPTS}/worker-approve.sh" "critic-<task-name>:${win}" y
-      sleep 2
-      continue
-    fi
+    # Auto-approve tool confirmations — ONLY when NOT using codex --full-auto or -a never.
+    # When using codex --full-auto, omit this block entirely; sending unsolicited
+    # keys to a codex session causes the "y → WORKER DONE → y → WORKER DONE" loop.
+    # if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
+    #   "${TMUX_SCRIPTS}/worker-approve.sh" "critic-<task-name>:${win}" y
+    #   sleep 2; continue
+    # fi
 
     polls=$((polls + 1))
     if [ "${polls}" -ge "${MAX_POLLS}" ]; then
@@ -240,8 +241,11 @@ done
 echo "ALL_WORKERS_DONE" >> "$POLL_STATUS_FILE"
 ```
 
-Wait for the background task to complete (Claude is notified automatically), then read
-the status file and proceed.
+Wait for the background task to complete (Claude is notified when the Bash command exits),
+then read the status file and proceed.
+
+**Important**: once you launch the background poll, do not also run manual `worker-read.sh`
+checks in parallel — that creates two concurrent writers to the same tmux pane.
 
 ### Send output to Critic
 
