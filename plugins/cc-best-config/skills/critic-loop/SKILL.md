@@ -78,6 +78,20 @@ Example rubric for a research task:
 
 The rubric is the Critic's contract. Make it explicit before any Worker starts.
 
+## Pre-flight Checklist
+
+Before running any infrastructure commands, verify these or they will fail silently:
+
+```bash
+# 1. tmux installed? (orchestrator.sh will error clearly if not, but check early)
+command -v tmux || { echo "Install: brew install tmux (Mac) or apt-get install tmux"; exit 1; }
+
+# 2. Inside a git repo? (worker-setup.sh requires git for worktrees)
+#    If not: pass --init-git flag and worker-setup.sh auto-initializes.
+#    Or: pass --no-worktree to skip worktrees entirely (no isolation, but works anywhere).
+git rev-parse --show-toplevel 2>/dev/null || echo "Not a git repo — use --init-git or --no-worktree"
+```
+
 ## Phase 1: Launch via tmux-orchestrator
 
 Use the `tmux-orchestrator` skill for all infrastructure. The Critic is just a special
@@ -86,24 +100,34 @@ worker window whose job is evaluation, not execution.
 ```bash
 # Resolve the tmux-orchestrator scripts path (run this first)
 TMUX_SCRIPTS=$(find ~/.claude -path "*/tmux-orchestrator/scripts" -type d 2>/dev/null | head -1)
-# If the above returns empty, try the plugin install path directly:
-# TMUX_SCRIPTS=~/.claude/plugins/cc-best-config/skills/tmux-orchestrator/scripts
 
-# Create session (opens a viewer terminal the user can watch)
+# Create session AND open a viewer terminal window the user can watch (--attach)
 "${TMUX_SCRIPTS}/orchestrator.sh" critic-<task-name> --attach
 
 # Launch Worker(s)
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w1 "claude"
+# --init-git: auto-init git repo if none exists (needed for worktrees)
+"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w1 "claude" HEAD --init-git
 # Add more workers for independent subtasks
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w2 "claude"
+"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w2 "claude" HEAD --init-git
 
 # Launch Critic as its own worker window
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> critic "claude"
+"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> critic "claude" HEAD --init-git
 ```
 
 `${TMUX_SCRIPTS}` = the tmux-orchestrator skill's `scripts/` directory, typically at
-`~/.claude/plugins/cc-best-config/skills/tmux-orchestrator/scripts/`. Use the `find`
-command above to resolve it automatically.
+`~/.claude/plugins/marketplaces/cc-best-config/plugins/cc-best-config/skills/tmux-orchestrator/scripts/`.
+Use the `find` command above to resolve it automatically.
+
+**Agent-specific launch tips:**
+
+| Agent | Recommended launch command | Why |
+|-------|---------------------------|-----|
+| `codex` | `codex --full-auto` | Reduces per-command approval prompts; use `-a never` if you want zero interruptions |
+| `claude` | `claude` | Default is fine; Claude Code handles approvals gracefully |
+| `gemini` | `gemini` | Default is fine |
+
+`worker-setup.sh` automatically handles codex startup prompts (update notice, directory
+trust) — it polls the pane and dismisses them before returning.
 
 ## Phase 2: Send Tasks to Workers
 
@@ -170,41 +194,87 @@ When in doubt, FAIL — erring toward quality is the point of this role.
 
 ## Phase 4: Submit Output to Critic
 
-Wait for **all** Workers to signal `WORKER DONE` before submitting to the Critic. Poll
-each window in a loop:
+### Polling strategy
+
+Run the poll loop as a **background Bash task** (set `run_in_background: true` on the
+Bash tool call). This lets Claude stop blocking and get notified when workers finish,
+rather than sleeping in a loop.
 
 ```bash
-# Poll all worker windows until each prints WORKER DONE
-# Adjust the window list to match your actual workers (e.g., "w1" for one, "w1 w2 w3" for three)
-MAX_POLLS=60  # 60 × 10s = 10 min timeout per worker; adjust as needed
+# BACKGROUND TASK: poll all workers, handle approvals, write status to a file
+# Run this with run_in_background: true so Claude is notified on completion
+
+POLL_STATUS_FILE="/tmp/critic-<task-name>-done.txt"
+MAX_POLLS=120  # 120 × 15s = 30 min total timeout
+
 for win in w1 w2; do
   polls=0
+  echo "Polling ${win}..."
   while true; do
-    output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 50)
-    echo "${output}" | grep -q "WORKER DONE" && break
+    output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 80)
+
+    # Check for completion
+    if echo "${output}" | grep -q "^WORKER DONE$"; then
+      echo "${win}: DONE" | tee -a "$POLL_STATUS_FILE"
+      break
+    fi
+
+    # Auto-approve common tool confirmations so workers don't stall
+    # (skip this block if using 'codex -a never' or 'codex --full-auto')
+    if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
+      echo "${win}: [auto-approve] detected approval prompt, sending y"
+      "${TMUX_SCRIPTS}/worker-approve.sh" "critic-<task-name>:${win}" y
+      sleep 2
+      continue
+    fi
+
     polls=$((polls + 1))
     if [ "${polls}" -ge "${MAX_POLLS}" ]; then
-      echo "ERROR: worker ${win} timed out — escalate to user before continuing"
-      exit 1
+      echo "ERROR: worker ${win} timed out after $((MAX_POLLS * 15))s" | tee -a "$POLL_STATUS_FILE"
+      break
     fi
-    sleep 10
+    sleep 15
   done
 done
+
+echo "ALL_WORKERS_DONE" >> "$POLL_STATUS_FILE"
 ```
 
-Only after all Workers are done, collect their output (read committed files or tmux pane
-output) and send the combined result to the Critic:
+Wait for the background task to complete (Claude is notified automatically), then read
+the status file and proceed.
+
+### Send output to Critic
+
+Collect worker output from committed files (preferred) or pane output, then send to Critic.
+
+**Important**: `worker-send.sh` accepts the prompt as `$2` argument OR via stdin. Both work:
 
 ```bash
-# Note: worker-send.sh passes the string as-is to tmux; use printf for reliable newlines
-printf 'Here is the Worker output for evaluation:\n\n%s' "<worker output>" | \
+# Option A: argument (works for any length)
+CRITIC_INPUT="Here is the Worker output:\n\n$(cat /path/to/output.md)"
+"${TMUX_SCRIPTS}/worker-send.sh" "critic-<task-name>:critic" "$CRITIC_INPUT"
+
+# Option B: stdin pipe (also works)
+printf 'Here is the Worker output:\n\n%s' "$(cat /path/to/output.md)" | \
   "${TMUX_SCRIPTS}/worker-send.sh" "critic-<task-name>:critic"
 ```
 
 Read the Critic's verdict:
 
 ```bash
-"${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:critic --lines 80
+# Poll for verdict (also run as background task if critic may take a while)
+MAX_POLLS=30
+polls=0
+while true; do
+  output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:critic --lines 80)
+  if echo "${output}" | grep -q "VERDICT:"; then
+    echo "${output}" | grep -A 20 "VERDICT:"
+    break
+  fi
+  polls=$((polls + 1))
+  [ "${polls}" -ge "${MAX_POLLS}" ] && { echo "Critic timed out"; break; }
+  sleep 15
+done
 ```
 
 ## Phase 5: Feedback Bridge (on FAIL)
@@ -251,7 +321,7 @@ Then repeat from Phase 4 (polling only the Workers that were asked to revise).
 | Condition | Action |
 |---|---|
 | Critic returns `VERDICT: PASS` | Proceed to Phase 6 |
-| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then teardown: `"${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name>` |
+| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then teardown each window: `for win in w1 w2 critic; do "${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name> "$win"; done` |
 | Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch, not an execution problem |
 | Worker blocked on a specific issue | Escalate to user for clarification |
 
@@ -265,7 +335,12 @@ When all Workers pass the Critic:
 
 1. Merge Worker branches using tmux-orchestrator's Phase 5 merge strategy
 2. Run any available verification (tests, linting)
-3. Clean up workers and worktrees: `"${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name>`
+3. Clean up workers and worktrees (teardown takes session + window name — call once per worker):
+   ```bash
+   for win in w1 w2 critic; do
+     "${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name> "$win"
+   done
+   ```
 4. Deliver final output with a quality summary:
 
 ```

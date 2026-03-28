@@ -12,6 +12,17 @@
 
 set -euo pipefail
 
+# Pre-flight: ensure tmux is installed
+if ! command -v tmux >/dev/null 2>&1; then
+  echo "ERROR: tmux is not installed." >&2
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "  Fix: brew install tmux" >&2
+  else
+    echo "  Fix: sudo apt-get install tmux" >&2
+  fi
+  exit 1
+fi
+
 SESSION="${1:-orchestrator}"
 ATTACH=false
 

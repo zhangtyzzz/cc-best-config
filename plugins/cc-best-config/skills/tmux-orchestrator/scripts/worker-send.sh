@@ -9,11 +9,24 @@
 
 set -euo pipefail
 
-TARGET="$1"
-PROMPT="$2"
+TARGET="${1:-}"
+
+# Accept prompt as $2 (argument) OR via stdin pipe.
+# Argument form:  worker-send.sh session:win "prompt text"
+# Stdin form:     printf '%s' "$PROMPT" | worker-send.sh session:win
+#                 worker-send.sh session:win < /tmp/prompt.txt
+if [[ $# -ge 2 && -n "${2:-}" ]]; then
+  PROMPT="$2"
+elif [[ ! -t 0 ]]; then
+  # Read from stdin
+  PROMPT=$(cat)
+else
+  PROMPT=""
+fi
 
 if [[ -z "$TARGET" || -z "$PROMPT" ]]; then
   echo "Usage: worker-send.sh <session>:<window> \"<prompt>\"" >&2
+  echo "   or: printf '%s' \"\$PROMPT\" | worker-send.sh <session>:<window>" >&2
   exit 1
 fi
 
