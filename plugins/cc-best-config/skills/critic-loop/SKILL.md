@@ -81,6 +81,11 @@ Use the `tmux-orchestrator` skill for all infrastructure. The Critic is just a s
 worker window whose job is evaluation, not execution.
 
 ```bash
+# Resolve the tmux-orchestrator scripts path (run this first)
+TMUX_SCRIPTS=$(find ~/.claude -path "*/tmux-orchestrator/scripts" -type d 2>/dev/null | head -1)
+# If the above returns empty, try the plugin install path directly:
+# TMUX_SCRIPTS=~/.claude/plugins/cc-best-config/skills/tmux-orchestrator/scripts
+
 # Create session (opens a viewer terminal the user can watch)
 "${TMUX_SCRIPTS}/orchestrator.sh" critic-<task-name> --attach
 
@@ -93,8 +98,9 @@ worker window whose job is evaluation, not execution.
 "${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> critic "claude"
 ```
 
-`${TMUX_SCRIPTS}` = the tmux-orchestrator skill's `scripts/` directory. Find it under the
-installed plugin path; ask the user if the path is unclear.
+`${TMUX_SCRIPTS}` = the tmux-orchestrator skill's `scripts/` directory, typically at
+`~/.claude/plugins/cc-best-config/skills/tmux-orchestrator/scripts/`. Use the `find`
+command above to resolve it automatically.
 
 ## Phase 2: Send Tasks to Workers
 
@@ -160,8 +166,22 @@ When in doubt, FAIL — erring toward quality is the point of this role.
 
 ## Phase 4: Submit Output to Critic
 
-When Worker(s) signal `WORKER DONE`, collect their output (read committed files or tmux
-pane output). Send to the Critic:
+Wait for **all** Workers to signal `WORKER DONE` before submitting to the Critic. Poll
+each window in a loop:
+
+```bash
+# Poll all worker windows until each prints WORKER DONE
+for win in w1 w2; do
+  while true; do
+    output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:${win} --lines 20)
+    echo "${output}" | grep -q "WORKER DONE" && break
+    sleep 10
+  done
+done
+```
+
+Only after all Workers are done, collect their output (read committed files or tmux pane
+output) and send the combined result to the Critic:
 
 ```bash
 "${TMUX_SCRIPTS}/worker-send.sh" critic-<task-name>:critic \
@@ -201,7 +221,7 @@ Then repeat from Phase 4.
 | Condition | Action |
 |---|---|
 | Critic returns `VERDICT: PASS` | Proceed to Phase 6 |
-| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best |
+| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then run `worker-teardown.sh` for all windows to avoid session leak. |
 | Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch, not an execution problem |
 | Worker blocked on a specific issue | Escalate to user for clarification |
 
