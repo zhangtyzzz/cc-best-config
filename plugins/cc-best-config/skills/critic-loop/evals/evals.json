@@ -1,0 +1,23 @@
+{
+  "skill_name": "critic-loop",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I need a comprehensive competitive analysis of AI coding tools — GitHub Copilot, Cursor, Claude Code, Windsurf — covering pricing, strengths, weaknesses, and who each is best for. I'm presenting this to my CTO next week so quality really matters. Please have a reviewer agent check it before giving it to me.",
+      "expected_output": "Claude should: (1) propose a task decomposition with at least one research Worker and one Critic, (2) define a rubric covering criteria like coverage, depth, accuracy, and structure, (3) outline the full critic-loop flow including the feedback bridge for FAIL cases, (4) use or reference tmux-orchestrator for infrastructure, (5) confirm the plan with the user before launching.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a Python module for a distributed job queue backed by Redis — support priority levels, retries with backoff, and dead-letter queue. I've been burned by incomplete implementations before. I want a critic agent to review the code quality and architecture before I integrate it into our service.",
+      "expected_output": "Claude should: (1) decompose into a coding Worker (implements the module) and a Critic (reviews architecture, completeness, edge cases), (2) define a code-quality rubric covering correctness, error handling, completeness of features, and code clarity, (3) plan the critic-loop with the feedback bridge, (4) reference tmux-orchestrator for infrastructure, (5) NOT use auto-research (no numeric metric).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I want to research and write a technical spec for adding SSO to our SaaS app — we need to support both SAML 2.0 and OIDC. Split it up however makes sense. Make sure there's a quality check built in — last time I wrote a spec like this it was missing half the edge cases.",
+      "expected_output": "Claude should: (1) propose splitting into parallel Workers (e.g., one for SAML, one for OIDC) plus one Critic, (2) define a spec-quality rubric covering completeness, edge case coverage, security considerations, and clarity, (3) set up the critic-loop with a feedback bridge, (4) confirm the rubric and decomposition with the user, (5) reference tmux-orchestrator infrastructure.",
+      "files": []
+    }
+  ]
+}
