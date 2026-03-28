@@ -28,10 +28,12 @@ separate the producer from the evaluator: give the evaluator a distinct identity
 criteria, and no knowledge of who produced the output. Loop until the evaluator is
 satisfied.
 
-This skill layers on top of `tmux-orchestrator`. The tmux layer handles all infrastructure
-(sessions, worktrees, sending/reading prompts, approving tool calls). This skill adds:
-Critic definition, rubric-based evaluation, and a feedback bridge that turns rejection
-into actionable revision instructions.
+Workers and Critic are either:
+- **Native Claude sub-agents** (via the `Agent` tool) — default, simplest
+- **External CLI agents** (Codex, Gemini, Claude CLI, aider) via the `cli-agents` skill
+
+Use CLI agents when the user explicitly specifies one ("用 Codex 来跑", "让 Gemini 评审").
+Otherwise, use Claude sub-agents or evaluate directly — no extra process needed.
 
 ## When to use
 
@@ -46,29 +48,28 @@ into actionable revision instructions.
 ```
 You (Orchestrator)
     │
-    ├─── Worker w1   ── executes subtask A ──┐
-    ├─── Worker w2   ── executes subtask B ──┤ (all output combined)
-    │    ...                                 │
-    └─── Critic  ←──────────────────────────┘
-              ── evaluates ALL worker output against rubric
-                              ↓
-                    PASS → deliver  |  FAIL → bridge feedback → Workers revise
+    ├── Bash → CLI agent exec "task A" → /tmp/w1.md   (background, parallel)
+    ├── Bash → CLI agent exec "task B" → /tmp/w2.md   (background, parallel)
+    │         Each process exits when done; Claude notified immediately.
+    │
+    └── Critic evaluation (Claude itself, or another CLI agent exec)
+              ↓
+        PASS → deliver  |  FAIL → inject output + feedback → re-run workers
 ```
 
 You own the loop. Workers execute; Critic evaluates; you bridge feedback between them.
 
 ## Phase 0: Define the Task and Rubric
 
-Before launching anything, clarify two things — and confirm with the user before proceeding.
+Before starting, clarify two things.
 
-**Task decomposition**: Break the user's request into subtasks. Each Worker gets one
-self-contained subtask. Identify which can run in parallel vs. which must be sequential.
+**Task decomposition**: Break the request into subtasks. Identify which can run in
+parallel (independent outputs) vs. sequential (B depends on A's output).
 
-**Critic rubric**: Define what "good enough" looks like. Derive criteria from the task.
-If the user hasn't specified criteria, propose a rubric and confirm it.
+**Critic rubric**: Define what "good enough" looks like. Make it explicit.
 
-Example rubric for a research task:
 ```
+Example rubric for a research task:
 1. Coverage — all major subtopics addressed with evidence
 2. Depth — no surface-level summaries; claims are supported
 3. Accuracy — no factual errors or unsupported assertions
@@ -76,90 +77,56 @@ Example rubric for a research task:
 5. Sources — authoritative sources cited where appropriate
 ```
 
-The rubric is the Critic's contract. Make it explicit before any Worker starts.
+## Phase 1: Launch Workers
 
-## Pre-flight Checklist
+**Do not tell workers about the Critic or the rubric** — evaluator independence requires
+workers to produce their best effort without gaming the criteria.
 
-Before running any infrastructure commands, verify these or they will fail silently:
+### Option A — Native Claude sub-agents (default)
+
+Use the `Agent` tool. Claude blocks until the sub-agent completes and returns the result
+directly — no Bash, no files, no polling.
+
+```
+Agent tool call:
+  prompt: "Your task: <subtask>. Requirements: <...>. Return your complete output."
+  run_in_background: true  ← for parallel workers
+```
+
+Results are returned in the Agent tool response. For parallel workers, spawn multiple
+Agent calls simultaneously; Claude receives each result as it completes.
+
+### Option B — External CLI agents (when user specifies: "用 Codex", "让 Gemini 跑")
+
+Use the `cli-agents` skill pattern. Write the prompt to a temp file, invoke the CLI tool,
+read the output file.
 
 ```bash
-# 1. tmux installed? (orchestrator.sh will error clearly if not, but check early)
-command -v tmux || { echo "Install: brew install tmux (Mac) or apt-get install tmux"; exit 1; }
+cat > /tmp/w1-prompt.txt << 'EOF'
+Your task: <specific subtask>
+Requirements: <...>
+Save output to /tmp/w1-output.md when complete.
+EOF
 
-# 2. Inside a git repo? (worker-setup.sh requires git for worktrees)
-#    If not: pass --init-git flag and worker-setup.sh auto-initializes.
-#    Or: pass --no-worktree to skip worktrees entirely (no isolation, but works anywhere).
-git rev-parse --show-toplevel 2>/dev/null || echo "Not a git repo — use --init-git or --no-worktree"
+codex exec --full-auto -C /path/to/workdir "$(cat /tmp/w1-prompt.txt)"
+# run_in_background: true  ← for parallel workers
 ```
 
-## Phase 1: Launch via tmux-orchestrator
+See `cli-agents` skill for Gemini, Claude CLI, and aider syntax.
 
-Use the `tmux-orchestrator` skill for all infrastructure. The Critic is just a special
-worker window whose job is evaluation, not execution.
+Independent workers run in parallel (background calls); sequential workers run one after
+another (synchronous calls).
 
-```bash
-# Resolve the tmux-orchestrator scripts path (run this first)
-TMUX_SCRIPTS=$(find ~/.claude -path "*/tmux-orchestrator/scripts" -type d 2>/dev/null | head -1)
+## Phase 2: Prime the Critic
 
-# Create session AND open a viewer terminal window the user can watch (--attach)
-"${TMUX_SCRIPTS}/orchestrator.sh" critic-<task-name> --attach
+Prime the Critic **while workers are running** — no need to wait. The Critic is:
 
-# Launch Worker(s)
-# --init-git: auto-init git repo if none exists (needed for worktrees)
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w1 "claude" HEAD --init-git
-# Add more workers for independent subtasks
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> w2 "claude" HEAD --init-git
+- **Claude itself** (default): evaluate worker output directly. Most efficient.
+- **A separate CLI agent** (when user specifies: "用 Codex 评审", "让 Gemini 来判断"):
+  run `codex exec` / `gemini` with the critic prompt after workers finish. This provides
+  the strongest evaluator independence (different model, different context entirely).
 
-# Launch Critic as its own worker window
-"${TMUX_SCRIPTS}/worker-setup.sh" critic-<task-name> critic "claude" HEAD --init-git
-```
-
-`${TMUX_SCRIPTS}` = the tmux-orchestrator skill's `scripts/` directory, typically at
-`~/.claude/plugins/marketplaces/cc-best-config/plugins/cc-best-config/skills/tmux-orchestrator/scripts/`.
-Use the `find` command above to resolve it automatically.
-
-**Agent-specific launch tips:**
-
-| Agent | Recommended launch command | Why |
-|-------|---------------------------|-----|
-| `codex` | `codex --full-auto` | Reduces per-command approval prompts; use `-a never` if you want zero interruptions |
-| `claude` | `claude` | Default is fine; Claude Code handles approvals gracefully |
-| `gemini` | `gemini` | Default is fine |
-
-`worker-setup.sh` automatically handles codex startup prompts (update notice, directory
-trust) — it polls the pane and dismisses them before returning.
-
-## Phase 2: Send Tasks to Workers
-
-Each Worker gets a prompt with task, scope, functional requirements, and a done signal.
-**Do not tell Workers about the Critic or the rubric** — evaluator independence requires
-the Worker to produce its best effort without gaming the criteria.
-
-```
-You are working in a git worktree at: <path>
-Branch: <branch>
-
-## Your task
-<specific subtask description>
-
-## Scope
-<files / directories / boundaries>
-
-## What success looks like
-<functional requirements — what the output must do or contain>
-
-## Instructions
-- Stay within your assigned scope
-- Commit your output with a descriptive message
-- When your draft is complete, output "WORKER DONE" on its own line
-- Do not self-evaluate quality — a separate reviewer will assess it
-```
-
-## Phase 3: Prime the Critic
-
-Send the Critic its evaluation context **while Workers are still running** — there is no
-need to wait for them. Priming the Critic in parallel means it is ready the moment Workers
-finish, with no idle gap between Phase 2 and Phase 4.
+Critic prompt template (used in Phase 3):
 
 ```
 You are an independent reviewer. Your job is to find gaps and weaknesses — not to be
@@ -171,190 +138,104 @@ encouraging. Assume the output can be significantly improved.
 ## Your evaluation rubric
 <paste the full rubric from Phase 0>
 
+## Worker output
+<paste combined worker output here>
+
 ## Evaluation format
-You will receive Worker output in the next message. Evaluate it and respond ONLY in
-this format:
+Respond ONLY in this exact format:
 
 VERDICT: PASS | FAIL
 
 CRITERION SCORES:
 - [criterion name]: PASS | FAIL — [one-sentence reason]
-- [criterion name]: PASS | FAIL — [one-sentence reason]
 ...
 
-REQUIRED IMPROVEMENTS (include only if FAIL):
+REQUIRED IMPROVEMENTS (only if FAIL):
 - [specific, actionable improvement 1]
-- [specific, actionable improvement 2]
 ...
 
-A PASS means the output meets all criteria well enough to deliver.
-If any single criterion fails, the overall verdict must be FAIL.
-When in doubt, FAIL — erring toward quality is the point of this role.
+If any single criterion fails, overall verdict must be FAIL. When in doubt, FAIL.
 ```
 
-## Phase 4: Submit Output to Critic
+## Phase 3: Collect Output and Evaluate
 
-### Polling strategy
-
-Run the poll loop as a **synchronous blocking Bash call** with `timeout: 600000`
-(10 minutes per chunk). Claude blocks until all workers finish or the chunk times out,
-then immediately proceeds — no user action needed.
-
-**Critical: poll all workers in every cycle, not one at a time.**
-A sequential loop (`for win in w1 w2; do ... done`) waits for w1 to finish before
-even checking w2 — a worker that completes in 2 min is invisible until the slow worker
-ahead of it finishes. The correct pattern checks every worker on each tick.
+Wait for all background worker tasks to complete (Claude is notified as each finishes),
+then read their output files and run the critic.
 
 ```bash
-# SYNCHRONOUS POLL — run with timeout: 600000 (10 min per Bash call)
-# Checks ALL workers every 15s. A fast worker is detected immediately;
-# slow workers don't block detection of fast ones.
+# Read all worker outputs
+W1=$(cat /tmp/w1-output.md 2>/dev/null || echo "ERROR: w1 output missing")
+W2=$(cat /tmp/w2-output.md 2>/dev/null || echo "ERROR: w2 output missing")
 
-WORKERS="w1 w2"   # space-separated list — adjust to match actual workers
-SESSION="critic-<task-name>"
-declare -A done_map
-
-MAX_POLLS=40      # 40 × 15s = 10 min; call again if STILL_PENDING remains
-
-for i in $(seq 1 $MAX_POLLS); do
-  all_done=true
-
-  for win in $WORKERS; do
-    # Skip already-confirmed workers
-    [[ "${done_map[$win]:-}" == "1" ]] && continue
-
-    output=$("${TMUX_SCRIPTS}/worker-read.sh" "${SESSION}:${win}" --lines 80)
-
-    # WORKER DONE detection — only after the codex separator line (────)
-    # Avoids false positives from "WORKER DONE" appearing in the prompt text.
-    after_sep=$(echo "${output}" | awk '/^────/{found=1} found{print}')
-    if echo "${after_sep}" | grep -q "WORKER DONE"; then
-      echo "${win}: DONE (detected at tick ${i})"
-      done_map[$win]="1"
-    else
-      all_done=false
-    fi
-
-    # Auto-approve — ONLY for non-codex agents (claude, gemini).
-    # OMIT for 'codex --full-auto'; unsolicited keys cause the y-loop.
-    # if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
-    #   "${TMUX_SCRIPTS}/worker-approve.sh" "${SESSION}:${win}" y
-    # fi
-  done
-
-  $all_done && { echo "ALL_DONE"; exit 0; }
-  sleep 15
-done
-
-# Chunk timed out — report who's still pending for next chunk
-for win in $WORKERS; do
-  [[ "${done_map[$win]:-}" != "1" ]] && echo "STILL_PENDING: ${win}"
-done
-echo "CHUNK_TIMEOUT"
+echo "W1 length: ${#W1} chars"
+echo "W2 length: ${#W2} chars"
 ```
 
-If output contains `STILL_PENDING`, call the poll again (with `WORKERS` set to only
-the pending ones). Only proceed to the Critic once all workers show `DONE`.
+**Option A — Claude evaluates directly** (default):
+Read the worker outputs and apply the rubric yourself. Produce the VERDICT format above.
 
-### Send output to Critic
+**Option B — separate critic agent**:
+```bash
+cat > /tmp/critic-prompt.txt << EOF
+[paste critic prompt template with worker outputs injected]
+EOF
 
-Collect worker output from committed files (preferred) or pane output, then send to Critic.
+codex exec --full-auto "$(cat /tmp/critic-prompt.txt)" -o /tmp/verdict.txt
+cat /tmp/verdict.txt
+```
 
-**Important**: `worker-send.sh` accepts the prompt as `$2` argument OR via stdin. Both work:
+## Phase 4: Feedback Bridge (on FAIL)
+
+Never send the raw critic verdict to workers. Translate it into clean revision prompts.
+Workers need direction, not judgment.
+
+**Map failing criteria to responsible workers.** Only send revision prompts to workers
+whose subtask has failing criteria. Workers whose subtasks fully passed are done.
+
+Revision prompt template:
 
 ```bash
-# Option A: argument (works for any length)
-CRITIC_INPUT="Here is the Worker output:\n\n$(cat /path/to/output.md)"
-"${TMUX_SCRIPTS}/worker-send.sh" "critic-<task-name>:critic" "$CRITIC_INPUT"
+CURRENT_OUTPUT=$(cat /tmp/w1-output.md)
 
-# Option B: stdin pipe (also works)
-printf 'Here is the Worker output:\n\n%s' "$(cat /path/to/output.md)" | \
-  "${TMUX_SCRIPTS}/worker-send.sh" "critic-<task-name>:critic"
+cat > /tmp/w1-revision.txt << EOF
+Your previous draft needs revision.
+
+Here is what you wrote:
+--- PREVIOUS OUTPUT ---
+${CURRENT_OUTPUT}
+--- END ---
+
+What needs to change:
+- <specific improvement 1 from critic>
+- <specific improvement 2 from critic>
+
+What to preserve (do not change):
+- <criteria that passed>
+
+Save the revised output to /tmp/w1-output.md (overwrite).
+EOF
+
+codex exec --full-auto -C /path/to/workdir "$(cat /tmp/w1-revision.txt)"
 ```
 
-Read the Critic's verdict:
-
-```bash
-# Poll for verdict (also run as background task if critic may take a while)
-MAX_POLLS=30
-polls=0
-while true; do
-  output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:critic --lines 80)
-  if echo "${output}" | grep -q "VERDICT:"; then
-    echo "${output}" | grep -A 20 "VERDICT:"
-    break
-  fi
-  polls=$((polls + 1))
-  [ "${polls}" -ge "${MAX_POLLS}" ] && { echo "Critic timed out"; break; }
-  sleep 15
-done
-```
-
-## Phase 5: Feedback Bridge (on FAIL)
-
-Never forward the Critic's raw verdict to Workers. Translate it into clean revision
-prompts. Workers need concrete direction, not a judgment.
-
-**Multi-worker routing**: When multiple Workers each own a distinct subtask, map each
-failing criterion back to the Worker responsible for it. Only that Worker receives a
-revision prompt; Workers whose subtasks fully passed are not disturbed.
-
-```
-# For each Worker whose subtask has failing criteria:
-Worker <wN> is responsible for: <subtask description>
-Failing criteria that fall within their scope: <list>
-→ send them a targeted revision prompt
-
-# For Workers whose subtask fully passed:
-→ no action; they are done
-```
-
-Revision prompt template (one per affected Worker):
-
-```
-Your previous draft was reviewed and did not pass quality review.
-
-## What needs to change
-<translate each REQUIRED IMPROVEMENT that falls within your scope into a specific,
-actionable directive>
-
-## What to preserve
-<list the criteria that PASSED within your scope — do not change these>
-
-## Instructions
-- Address every issue listed above
-- Do not touch sections that already passed review
-- Commit your revised output and output "WORKER DONE" again
-```
-
-Then repeat from Phase 4 (polling only the Workers that were asked to revise).
+Then repeat Phase 3 (collect + evaluate) for the revised output.
 
 ## Stop Conditions
 
 | Condition | Action |
 |---|---|
-| Critic returns `VERDICT: PASS` | Proceed to Phase 6 |
-| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best. Then teardown each window: `for win in w1 w2 critic; do "${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name> "$win"; done` |
-| Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch, not an execution problem |
-| Worker blocked on a specific issue | Escalate to user for clarification |
+| Critic returns `VERDICT: PASS` | Proceed to Phase 5 |
+| Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best |
+| Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch |
+| Worker output file missing or empty | Check CLI agent exit code; re-run or escalate |
 
-Do not stop because a single iteration failed. Diagnose the specific block, send sharper
-instructions, or escalate. The loop ends only when the Critic passes or a declared stop
-condition fires.
+## Phase 5: Deliver
 
-## Phase 6: Aggregate and Deliver
+When all criteria pass:
 
-When all Workers pass the Critic:
-
-1. Merge Worker branches using tmux-orchestrator's Phase 5 merge strategy
-2. Run any available verification (tests, linting)
-3. Clean up workers and worktrees (teardown takes session + window name — call once per worker):
-   ```bash
-   for win in w1 w2 critic; do
-     "${TMUX_SCRIPTS}/worker-teardown.sh" critic-<task-name> "$win"
-   done
-   ```
-4. Deliver final output with a quality summary:
+1. Read final output files
+2. Assemble and deliver to user
+3. Include a quality summary:
 
 ```
 ## Quality Summary
@@ -363,8 +244,8 @@ Task: <name>
 Iterations: <N>
 
 Final rubric scores:
-- [criterion]: PASS
-- ...
+- [criterion]: PASS — [reason]
+...
 
 Key improvements across iterations:
 - Iteration 1→2: <what changed and why>
@@ -372,20 +253,21 @@ Key improvements across iterations:
 
 ## Orchestrator Rules
 
-**You own the loop.** "The Critic returned" ≠ "done." You decide whether to loop again.
+**You own the loop.** Workers execute; you decide when to accept and when to revise.
 
-**Critic is adversarial by design.** A Critic that keeps passing everything is failing
-its job. If the Critic seems too lenient, add to its prompt: "If in doubt, FAIL."
+**Critic is adversarial by design.** If the Critic seems too lenient, add: "When in
+doubt, FAIL — erring toward quality is the point of this role."
 
 **Workers don't know about the Critic.** Evaluator independence is the whole point.
-Workers produce their best against functional requirements, not against the rubric.
 
-**Bridge, don't relay.** Never dump the raw Critic verdict into the Worker's prompt.
-Translate criticism into actionable direction — the Worker should feel instructed, not judged.
+**Bridge, don't relay.** Never dump raw critic output into the worker prompt. Translate
+criticism into specific, actionable directives. Workers should feel instructed, not judged.
+
+**Carry context explicitly.** Neither CLI agents nor native sub-agents retain state between
+calls. Always inject the previous output into revision prompts.
 
 **Escalate early.** Two consecutive rounds with the same failing criterion → it's a scope
 or rubric problem. Ask the user before iterating further.
 
-**Track iteration count.** Maintain a counter in your working notes (e.g., "Iteration 1/3").
-Increment it every time you send Workers back for revision. Enforce the max-iterations stop
-condition yourself — do not rely on memory across a long session.
+**Track iteration count.** Maintain a counter (e.g., "Iteration 1/3"). Enforce the
+max-iterations stop condition yourself.
