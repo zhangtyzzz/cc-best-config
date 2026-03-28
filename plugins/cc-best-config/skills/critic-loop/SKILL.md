@@ -202,7 +202,14 @@ rather than sleeping in a loop.
 
 ```bash
 # BACKGROUND TASK: poll all workers until each signals WORKER DONE
-# Run this with run_in_background: true so Claude is notified on completion
+# Run this with run_in_background: true so Claude is notified on completion.
+#
+# IMPORTANT — notification timing:
+#   The "task complete" notification appears in Claude's context on the NEXT
+#   user message turn after the task finishes. For tasks > ~5 min, ask the user
+#   to send a message like "done?" when they see the workers finish in tmux.
+#   For tasks < 5 min, the notification usually fires within the same turn.
+#
 # WARNING: do NOT run a manual poll simultaneously — two concurrent pollers
 #          will both send to the same tmux pane and corrupt the session.
 
@@ -215,8 +222,11 @@ for win in w1 w2; do
   while true; do
     output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 80)
 
-    # Check for completion — always check this FIRST and break immediately
-    if echo "${output}" | grep -q "^WORKER DONE$"; then
+    # WORKER DONE detection — must appear AFTER the codex separator line (────)
+    # This avoids false positives from the prompt text itself containing "WORKER DONE".
+    # The separator appears after the agent's final response block.
+    after_separator=$(echo "${output}" | awk '/^────/{found=1} found{print}')
+    if echo "${after_separator}" | grep -q "WORKER DONE"; then
       echo "${win}: DONE" | tee -a "$POLL_STATUS_FILE"
       break
     fi
@@ -241,11 +251,13 @@ done
 echo "ALL_WORKERS_DONE" >> "$POLL_STATUS_FILE"
 ```
 
-Wait for the background task to complete (Claude is notified when the Bash command exits),
-then read the status file and proceed.
+After launching the background task:
+- For short tasks (< 5 min): Claude is notified automatically on the next turn.
+- For long tasks (> 5 min): ask the user to send a message when they see workers finish
+  in their tmux window. The background task status file at `$POLL_STATUS_FILE` always
+  has the ground truth.
 
-**Important**: once you launch the background poll, do not also run manual `worker-read.sh`
-checks in parallel — that creates two concurrent writers to the same tmux pane.
+**Do not** run manual `worker-read.sh` checks while the background poll is running.
 
 ### Send output to Critic
 
