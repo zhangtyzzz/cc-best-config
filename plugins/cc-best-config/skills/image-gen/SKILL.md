@@ -1,8 +1,15 @@
 ---
 name: image-gen
 description: |
-  AI画图和图片生成工具。当用户想画图、画插画、画海报、生成图片、做风格转换、基于参考图生成新图时，使用此技能。Use this skill for any AI image generation task: drawing illustrations, creating posters, generating avatars, style transfer from reference images, fusing styles from multiple images, maintaining character/IP consistency, or face stylization. Supports Gemini and any OpenAI-compatible API, custom aspect ratios (16:9, 9:16), up to 4K resolution, and multi-image reference input. Do NOT use for image processing tasks like compression, cropping, stitching, watermarking, format conversion, or for writing code that manipulates images (PIL, OpenCV, ffmpeg).
-  Triggers: 画图, 生成图片, 画插画, 画海报, 风格转换, 参考图, 类似风格, 融合风格, 角色一致, 生成头像, generate image, draw, illustration, style transfer, reference image, AI art, face editing, image gen, character consistency
+  AI 画图和图片生成技能。Use when the user wants illustrations, posters, avatars,
+  style transfer, reference image generation, multi image style fusion, character
+  consistency, or face stylization. Supports Gemini and OpenAI compatible image
+  APIs, custom aspect ratios, high resolution output, and reference images. Do
+  not use for image processing tasks such as compression, cropping, stitching,
+  watermarking, format conversion, or code that manipulates images with PIL,
+  OpenCV, or ffmpeg. Triggers include 画图, 生成图片, 画插画, 画海报, 风格转换,
+  参考图, 融合风格, 角色一致, 生成头像, generate image, illustration, style
+  transfer, reference image, AI art, face editing, and image gen.
 version: 1.0.0
 ---
 

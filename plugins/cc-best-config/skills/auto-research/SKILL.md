@@ -1,6 +1,6 @@
 ---
 name: auto-research
-description: Set up an autonomous loop that repeatedly modifies code/config/content, runs an evaluation, and keeps improvements automatically. Use this skill when the user wants you to keep iterating on something until a metric improves — phrases like "自动迭代优化", "keep trying until", "一轮一轮改到全部 pass", "autoresearch", "auto-research", "自动跑实验", "experiment loop", "self-improvement loop", or any request where the user provides a target file AND a measurable goal (test pass count, benchmark time, coverage %, accuracy score, bundle size, validation loss) and wants you to loop autonomously rather than make a single attempt. If the user describes both what to change and how to measure success, and wants autonomous iteration, this is the skill to use.
+description: Set up an autonomous improvement loop for code, config, or content. The agent edits a target, runs an evaluation, and keeps iterating until a measurable metric improves or a stop condition is met. Use when the user wants repeated automatic attempts rather than one pass, especially for requests like "自动迭代优化", "keep trying until", "一轮一轮改到全部 pass", "auto-research", or "experiment loop". Trigger when the user provides both an editable target and a scriptable success metric such as test pass count, benchmark score, coverage, accuracy, bundle size, or validation loss.
 ---
 
 # Auto Research
