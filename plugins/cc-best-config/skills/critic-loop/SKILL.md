@@ -171,9 +171,10 @@ each window in a loop:
 
 ```bash
 # Poll all worker windows until each prints WORKER DONE
+# Adjust the window list to match your actual workers (e.g., "w1" for a single worker, "w1 w2 w3" for three)
 for win in w1 w2; do
   while true; do
-    output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:${win} --lines 20)
+    output=$("${TMUX_SCRIPTS}/worker-read.sh" critic-<task-name>:${win} --lines 50)
     echo "${output}" | grep -q "WORKER DONE" && break
     sleep 10
   done
