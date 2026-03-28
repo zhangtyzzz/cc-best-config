@@ -197,67 +197,64 @@ When in doubt, FAIL — erring toward quality is the point of this role.
 ### Polling strategy
 
 Run the poll loop as a **synchronous blocking Bash call** with `timeout: 600000`
-(10 minutes). Claude waits, workers finish, Claude immediately proceeds to the next
-step — the user does not need to do anything.
+(10 minutes per chunk). Claude blocks until all workers finish or the chunk times out,
+then immediately proceeds — no user action needed.
 
-If workers may take longer than 10 minutes, call the poll in multiple sequential
-10-minute chunks until all workers are done.
+**Critical: poll all workers in every cycle, not one at a time.**
+A sequential loop (`for win in w1 w2; do ... done`) waits for w1 to finish before
+even checking w2 — a worker that completes in 2 min is invisible until the slow worker
+ahead of it finishes. The correct pattern checks every worker on each tick.
 
 ```bash
-# SYNCHRONOUS POLL — run with timeout: 600000 (10 min max per call)
-# Claude blocks here, then proceeds automatically when all workers are done.
-# Do NOT use run_in_background: true — that requires a user message to deliver
-# the notification, making Claude dependent on the user to drive the loop.
+# SYNCHRONOUS POLL — run with timeout: 600000 (10 min per Bash call)
+# Checks ALL workers every 15s. A fast worker is detected immediately;
+# slow workers don't block detection of fast ones.
 
-POLL_STATUS_FILE="/tmp/critic-<task-name>-done.txt"
-declare -A done_workers
+WORKERS="w1 w2"   # space-separated list — adjust to match actual workers
+SESSION="critic-<task-name>"
+declare -A done_map
 
-for win in w1 w2; do
-  # Skip windows already confirmed done (for multi-chunk runs)
-  [[ "${done_workers[$win]:-}" == "1" ]] && continue
+MAX_POLLS=40      # 40 × 15s = 10 min; call again if STILL_PENDING remains
 
-  polls=0
-  MAX_POLLS=40  # 40 × 15s = 10 min per worker (matches bash timeout: 600000)
-  echo "Polling ${win}..."
-  while true; do
-    output=$("${TMUX_SCRIPTS}/worker-read.sh" "critic-<task-name>:${win}" --lines 80)
+for i in $(seq 1 $MAX_POLLS); do
+  all_done=true
 
-    # WORKER DONE detection — only match after the codex separator line (────)
-    # to avoid false positives from the prompt text containing "WORKER DONE".
-    after_separator=$(echo "${output}" | awk '/^────/{found=1} found{print}')
-    if echo "${after_separator}" | grep -q "WORKER DONE"; then
-      echo "${win}: DONE"
-      done_workers[$win]="1"
-      break
+  for win in $WORKERS; do
+    # Skip already-confirmed workers
+    [[ "${done_map[$win]:-}" == "1" ]] && continue
+
+    output=$("${TMUX_SCRIPTS}/worker-read.sh" "${SESSION}:${win}" --lines 80)
+
+    # WORKER DONE detection — only after the codex separator line (────)
+    # Avoids false positives from "WORKER DONE" appearing in the prompt text.
+    after_sep=$(echo "${output}" | awk '/^────/{found=1} found{print}')
+    if echo "${after_sep}" | grep -q "WORKER DONE"; then
+      echo "${win}: DONE (detected at tick ${i})"
+      done_map[$win]="1"
+    else
+      all_done=false
     fi
 
-    # Auto-approve tool confirmations — ONLY for non-codex agents (claude, gemini).
-    # OMIT this block when using 'codex --full-auto'; unsolicited keys cause
-    # the "y → WORKER DONE → y → WORKER DONE" loop.
+    # Auto-approve — ONLY for non-codex agents (claude, gemini).
+    # OMIT for 'codex --full-auto'; unsolicited keys cause the y-loop.
     # if echo "${output}" | grep -qE "Do you want to allow|proceed\? \(y"; then
-    #   "${TMUX_SCRIPTS}/worker-approve.sh" "critic-<task-name>:${win}" y
-    #   sleep 2; continue
+    #   "${TMUX_SCRIPTS}/worker-approve.sh" "${SESSION}:${win}" y
     # fi
-
-    polls=$((polls + 1))
-    if [ "${polls}" -ge "${MAX_POLLS}" ]; then
-      echo "${win}: still running after 10 min — will re-poll next chunk"
-      break
-    fi
-    sleep 15
   done
+
+  $all_done && { echo "ALL_DONE"; exit 0; }
+  sleep 15
 done
 
-# Report which workers are still pending (orchestrator will re-poll if needed)
-for win in w1 w2; do
-  [[ "${done_workers[$win]:-}" != "1" ]] && echo "STILL_PENDING: ${win}"
+# Chunk timed out — report who's still pending for next chunk
+for win in $WORKERS; do
+  [[ "${done_map[$win]:-}" != "1" ]] && echo "STILL_PENDING: ${win}"
 done
-echo "POLL_CHUNK_COMPLETE"
+echo "CHUNK_TIMEOUT"
 ```
 
-After each call, check the output for `STILL_PENDING` lines. If any workers are still
-running, call the same poll again (Claude orchestrates as many chunks as needed).
-Only proceed to the Critic once all workers report `DONE`.
+If output contains `STILL_PENDING`, call the poll again (with `WORKERS` set to only
+the pending ones). Only proceed to the Critic once all workers show `DONE`.
 
 ### Send output to Critic
 
