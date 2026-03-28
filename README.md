@@ -33,17 +33,17 @@ claude plugin install cc-best-config
 | **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. The main agent acts as supervisor and must continue or relaunch worker agents until an explicit stop condition is verified. |
 | **baoyu-article-illustrator** | Analyze an article, decide where visuals are needed, and generate consistent illustrations using a Type × Style workflow. |
 | **baoyu-image-gen** | Generate images through OpenAI, Google, OpenRouter, DashScope, ModelScope, Jimeng, Seedream, or Replicate APIs. Supports saved prompt files, references, aspect ratios, and batch mode. |
-| **tmux-orchestrator** | Orchestrate multiple CLI agents (Claude Code, Codex, Gemini, etc.) in parallel via tmux. Uses git worktrees for code isolation, distributes tasks, monitors progress, and merges results. |
 | **pragmatic-engineering** | Graded engineering discipline that right-sizes process to task complexity. Triages tasks into four levels (L0 direct execute → L3 subagent orchestration) so simple changes stay fast while complex features get proper design and review gates. |
 | **image-gen** | Universal AI image generation via any OpenAI-compatible API endpoint. First-class reference-image workflow: provide one or more reference images to generate new content that preserves the same visual style, character design, and IP consistency. Supports local files, face editing, aspect ratios, and resolutions up to 4K. |
-| **critic-loop** | Multi-agent quality loop: N Worker agents execute subtasks while a dedicated Critic agent evaluates output against a pre-defined rubric. Critic feedback is translated into revision instructions; loop continues until all criteria pass. Builds on tmux-orchestrator for infrastructure. Use when quality is judged by criteria (research, docs, code with design tradeoffs) rather than a numeric metric. |
+| **cli-agents** | Use any CLI AI tool (Codex, Gemini CLI, Claude CLI, etc.) as a sub-agent via exec mode. The process exits when done; results go to a file; no tmux, no polling. Supports parallel background calls and multi-round revision loops. |
+| **critic-loop** | Multi-agent quality loop: N Worker agents execute subtasks while a dedicated Critic evaluates output against a rubric and drives iterative refinement until all criteria pass. Uses native sub-agents by default; falls back to CLI exec when the user specifies a tool. Use when quality is judged by criteria (research, docs, code with design tradeoffs) rather than a numeric metric. |
 
 ## Notes
 
 - `baoyu-image-gen` uses `bun` or `npx -y bun` to run its script and expects provider credentials via env vars and/or `EXTEND.md`.
 - `baoyu-article-illustrator` depends on article-specific prompt files and is designed to work with `baoyu-image-gen` for final rendering.
 - `auto-research` is for tasks with a cheap, objective evaluation loop. If the metric is noisy or subjective, it is the wrong tool.
-- `tmux-orchestrator` requires `tmux` and at least one agent CLI installed. The orchestrator acts as supervisor, reviewing and approving each worker's tool-use requests within task scope.
+- `cli-agents` requires the target CLI tool to be installed and authenticated. Each invocation starts a fresh session — context is carried by the orchestrator, not retained by the agent.
 
 ### Hooks
 
