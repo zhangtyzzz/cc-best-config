@@ -5,9 +5,9 @@
   },
   "plugins": [
     {
-      "name": "cc-best-config",
-      "description": "Best-practice skills, hooks, and rules for productive AI-assisted development",
-      "source": "./plugins/cc-best-config",
+      "name": "work-toolkit",
+      "description": "Curated skills, hooks, and rules for productive AI-assisted daily work",
+      "source": "./plugins/work-toolkit",
       "category": "productivity",
       "homepage": "https://github.com/zhangtyzzz/cc-best-config"
     }

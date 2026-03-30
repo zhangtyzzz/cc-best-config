@@ -1,7 +1,7 @@
 {
-  "name": "cc-best-config",
-  "version": "0.1.0",
-  "description": "Claude Code best practices — curated skills, hooks, and rules for productive AI-assisted development",
+  "name": "work-toolkit",
+  "version": "0.2.0",
+  "description": "Curated skills, hooks, and rules for productive AI-assisted daily work",
   "author": {
     "name": "zhangtyzzz"
   },

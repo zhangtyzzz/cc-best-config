@@ -1,0 +1,26 @@
+{
+  "skill_name": "image-gen",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我生成一张水彩风格的猫咪插画，要求 16:9 的比例，分辨率 2K",
+      "expected_output": "生成一张水彩风格猫咪图片，比例 16:9，保存到本地并展示给用户",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我有一张参考图 /tmp/image-gen-test/image_gen_20260327_145543_957642_0.png，帮我基于这个风格生成一张新图，内容是同样的猫咪在雪地里玩耍",
+      "expected_output": "使用参考图生成一张保持水彩风格和猫咪 IP 一致性的新图，猫在雪地里玩耍",
+      "files": ["/tmp/image-gen-test/image_gen_20260327_145543_957642_0.png"]
+    },
+    {
+      "id": 3,
+      "prompt": "这里有两张参考图：/tmp/image-gen-test/image_gen_20260327_145543_957642_0.png 和 /tmp/image-gen-test/image_gen_20260327_145727_113522_0.png，帮我基于这些图的风格和角色，生成一张新图：这只猫在月光下的屋顶上",
+      "expected_output": "使用两张参考图，生成保持水彩风格和同一只橘猫 IP 的新图，场景为月光屋顶",
+      "files": [
+        "/tmp/image-gen-test/image_gen_20260327_145543_957642_0.png",
+        "/tmp/image-gen-test/image_gen_20260327_145727_113522_0.png"
+      ]
+    }
+  ]
+}
