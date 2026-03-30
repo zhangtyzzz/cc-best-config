@@ -10,7 +10,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 ├── .claude-plugin/
 │   └── marketplace.json      — Marketplace 清单
 ├── plugins/
-│   └── cc-best-config/       — 主插件
+│   └── work-toolkit/         — 主插件
 │       ├── .claude-plugin/
 │       │   └── plugin.json   — 插件清单
 │       ├── skills/           — 技能定义
@@ -63,5 +63,5 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 claude plugin marketplace add zhangtyzzz/cc-best-config
 
 # 2. 安装插件
-claude plugin install cc-best-config
+claude plugin install work-toolkit
 ```

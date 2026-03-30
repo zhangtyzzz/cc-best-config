@@ -1,4 +1,4 @@
-# cc-best-config
+# work-toolkit
 
 [English](./README.md)
 
@@ -8,7 +8,7 @@
 
 - 内置 `auto-research` 这类可度量迭代优化工作流，要求主 agent 保持监督职责，只有命中显式停止条件才允许结束。
 - 包含内容与媒体相关技能，既能为文章配图，也能通过多家 API 批量生成图片。
-- 以 marketplace 插件方式分发，放在 `plugins/cc-best-config/skills/` 下的新技能会随同插件一起安装。
+- 以 marketplace 插件方式分发，放在 `plugins/work-toolkit/skills/` 下的新技能会随同插件一起安装。
 
 ## 安装
 
@@ -17,7 +17,7 @@
 claude plugin marketplace add zhangtyzzz/cc-best-config
 
 # 2. 安装插件
-claude plugin install cc-best-config
+claude plugin install work-toolkit
 ```
 
 ## 已有内容
@@ -59,7 +59,7 @@ claude plugin install cc-best-config
 ├── .claude-plugin/
 │   └── marketplace.json      Marketplace 清单
 ├── plugins/
-│   └── cc-best-config/       主插件
+│   └── work-toolkit/         主插件
 │       ├── .claude-plugin/
 │       │   └── plugin.json   插件清单
 │       ├── skills/           技能定义（每个技能一个目录）
