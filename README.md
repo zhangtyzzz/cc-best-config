@@ -1,4 +1,4 @@
-# cc-best-config
+# work-toolkit
 
 [中文版](./README_CN.md)
 
@@ -8,7 +8,7 @@ Curated Claude Code marketplace — production-ready skills, hooks, rules, and a
 
 - Includes iterative optimization workflows such as `auto-research`, where the main agent stays responsible for supervision and must keep workers running until a real stop condition is met.
 - Bundles specialized content and media skills, including article illustration and API-based image generation.
-- Ships as a marketplace plugin, so new skills added under `plugins/cc-best-config/skills/` are installable through the same package.
+- Ships as a marketplace plugin, so new skills added under `plugins/work-toolkit/skills/` are installable through the same package.
 
 ## Install
 
@@ -17,7 +17,7 @@ Curated Claude Code marketplace — production-ready skills, hooks, rules, and a
 claude plugin marketplace add zhangtyzzz/cc-best-config
 
 # 2. Install plugin
-claude plugin install cc-best-config
+claude plugin install work-toolkit
 ```
 
 ## What's Included
@@ -59,7 +59,7 @@ claude plugin install cc-best-config
 ├── .claude-plugin/
 │   └── marketplace.json      Marketplace manifest
 ├── plugins/
-│   └── cc-best-config/       Main plugin
+│   └── work-toolkit/         Main plugin
 │       ├── .claude-plugin/
 │       │   └── plugin.json   Plugin manifest
 │       ├── skills/           Skill definitions (one per directory)
