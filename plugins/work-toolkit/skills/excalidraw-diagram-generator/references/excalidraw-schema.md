@@ -67,9 +67,9 @@ interface BaseElement {
 interface RectangleElement extends BaseElement {
   type: "rectangle";
   roundness: { type: 3 };      // 3 = rounded corners
-  text?: string;               // Optional text inside
+  text?: string;               // Legacy inline text support only; avoid for PNG export
   fontSize?: number;           // Font size (16-32 typical)
-  fontFamily?: number;         // 1 = Virgil, 2 = Helvetica, 3 = Cascadia
+  fontFamily?: number;         // Legacy values exist, but prefer explicit text elements with 5 = Excalifont
   textAlign?: "left" | "center" | "right";
   verticalAlign?: "top" | "middle" | "bottom";
 }
@@ -99,7 +99,7 @@ interface RectangleElement extends BaseElement {
 ```typescript
 interface EllipseElement extends BaseElement {
   type: "ellipse";
-  text?: string;
+  text?: string;               // Legacy inline text support only; avoid for PNG export
   fontSize?: number;
   fontFamily?: number;
   textAlign?: "left" | "center" | "right";
@@ -112,7 +112,7 @@ interface EllipseElement extends BaseElement {
 ```typescript
 interface DiamondElement extends BaseElement {
   type: "diamond";
-  text?: string;
+  text?: string;               // Legacy inline text support only; avoid for PNG export
   fontSize?: number;
   fontFamily?: number;
   textAlign?: "left" | "center" | "right";
@@ -176,7 +176,7 @@ interface TextElement extends BaseElement {
   type: "text";
   text: string;
   fontSize: number;
-  fontFamily: number;          // 1-3
+  fontFamily: number;          // Prefer 5 = Excalifont for stable document exports
   textAlign: "left" | "center" | "right";
   verticalAlign: "top" | "middle" | "bottom";
   roundness: null;             // Text has no roundness
@@ -204,6 +204,16 @@ interface TextElement extends BaseElement {
 **Width/Height calculation:**
 - Width ≈ `text.length * fontSize * 0.6`
 - Height ≈ `fontSize * 1.2 * numberOfLines`
+
+## Recommended Labeling Strategy
+
+For stable exports, especially when using `export-to-png.mjs`, prefer this structure:
+
+1. Draw the node shape (`rectangle`, `ellipse`, `diamond`) without inline text.
+2. Add a separate `text` element above it.
+3. Use `fontFamily: 5` for all `text` elements.
+
+This is more reliable than embedding labels directly in shape elements.
 
 ## Bindings
 

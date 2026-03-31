@@ -2,6 +2,19 @@
 
 This directory contains scripts for working with Excalidraw libraries.
 
+## Important Export Note
+
+When generating diagrams intended for PNG export, do not rely on shape-inline
+text such as `rectangle.text` or `ellipse.text` for the main labels. Use
+standalone `text` elements with `fontFamily: 5` instead.
+
+Recommended pattern:
+
+- shape element for the visual container
+- separate `text` element for the label
+
+This matches the most reliable rendering path for `export-to-png.mjs`.
+
 ## split-excalidraw-library.py
 
 Splits an Excalidraw library file (`*.excalidrawlib`) into individual icon JSON files for efficient token usage by AI assistants.
