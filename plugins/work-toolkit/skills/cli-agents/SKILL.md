@@ -31,16 +31,118 @@ Main Claude (Orchestrator)
     └── Read /tmp/a.md + /tmp/b.md → continue orchestration
 ```
 
+## Session Persistence (NEW)
+
+**Claude Code supports native session persistence.** You can resume a previous
+CLI agent session with full context intact — no need to re-send the entire
+conversation history.
+
+### How It Works
+
+1. **Capture session ID**: Use `--output-format json` to get the `session_id`
+2. **Save session ID**: Store it in a state file for later lookup
+3. **Resume session**: Use `--resume <session_id>` to continue with context
+
+```bash
+# Round 1: Create session and capture ID
+RESULT=$(claude -p "Analyze the codebase and list all API endpoints" \
+    --output-format json)
+SESSION_ID=$(echo "$RESULT" | jq -r '.session_id')
+echo "$SESSION_ID" > "$RUN_DIR/session.id"
+
+# Round 2: Resume with full context
+claude -p "Now create a markdown document summarizing the endpoints" \
+    --resume "$(cat "$RUN_DIR/session.id")" \
+    --output-format json | jq -r '.result'
+```
+
+### State Management Script
+
+Use the provided script to track sessions across a multi-round workflow:
+
+```bash
+# Initialize state
+"$SKILL_DIR/scripts/cli-agent-state.sh" init "$RUN_DIR"
+
+# Save session after each round
+SESSION_ID=$(claude -p "$PROMPT" --output-format json | jq -r '.session_id')
+"$SKILL_DIR/scripts/cli-agent-state.sh" save "$RUN_DIR" "$SESSION_ID" "claude" "$PROMPT"
+
+# Get latest session for resume
+LATEST_ID=$("$SKILL_DIR/scripts/cli-agent-state.sh" latest "$RUN_DIR" "claude")
+```
+
+### Session Resume Pattern
+
+For multi-round workflows where context should carry forward:
+
+```bash
+RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
+PROMPT_FILE="$RUN_DIR/task.txt"
+
+# Round 1: Initial task
+cat > "$PROMPT_FILE" << 'EOF'
+Analyze the authentication module in src/auth/.
+List all security concerns you find.
+EOF
+
+RESULT=$(claude -p "$(cat "$PROMPT_FILE")" --output-format json)
+SESSION_ID=$(echo "$RESULT" | jq -r '.session_id')
+echo "$SESSION_ID" > "$RUN_DIR/session.id"
+echo "$RESULT" | jq -r '.result' > "$RUN_DIR/round1.md"
+
+# Round 2: Follow-up with context (agent remembers Round 1)
+cat > "$PROMPT_FILE" << 'EOF'
+Based on your analysis, create a security report.
+Include specific code locations and remediation steps.
+EOF
+
+claude -p "$(cat "$PROMPT_FILE")" \
+    --resume "$(cat "$RUN_DIR/session.id")" \
+    --output-format json | jq -r '.result' > "$RUN_DIR/final-report.md"
+```
+
+### Session ID Control
+
+You can pre-specify a session ID for deterministic tracking:
+
+```bash
+# Generate a valid UUID (macOS/Linux)
+SESSION_UUID=$(uuidgen)  # macOS
+# or: SESSION_UUID=$(cat /proc/sys/kernel/random/uuid)  # Linux
+
+# Or use a fixed UUID for testing/deterministic workflows
+SESSION_UUID="00000000-0000-0000-0000-000000000001"
+
+# Use this ID for the session
+claude -p "Initial task" --session-id "$SESSION_UUID" --output-format json
+
+# Later, resume by this known ID
+claude -p "Continue" --resume "$SESSION_UUID"
+```
+
 ## CLI Adapter Reference
 
 Each tool has an exec / non-interactive mode. Use these invocations:
 
-### Codex
+### Codex (OpenAI)
 ```bash
+# Exec mode (one-shot, no persistence)
 codex exec --full-auto \
   -C /path/to/workdir \
   -o /tmp/output.txt \
   "Your task prompt here"
+
+# Resume previous session (Codex uses subcommand syntax)
+codex exec resume --last \
+  -C /path/to/workdir \
+  -o /tmp/output.txt \
+  "Continue the previous task"
+
+# Or resume a specific session by ID
+codex exec resume <session-uuid> \
+  -C /path/to/workdir \
+  "Continue with specific session"
 
 # Flags:
 #   --full-auto          No approval prompts; workspace writes allowed
@@ -60,7 +162,17 @@ gemini < /tmp/prompt.txt > /tmp/output.txt 2>&1
 
 ### Claude CLI
 ```bash
+# One-shot execution
 claude -p "Your task prompt" > /tmp/output.txt 2>&1
+
+# With JSON output (captures session_id)
+claude -p "Your task prompt" --output-format json | jq -r '.session_id, .result'
+
+# Resume previous session
+claude -p "Continue from where we left off" --resume "<session-id>"
+
+# Pre-specify session ID
+claude -p "Your task" --session-id "<uuid>" --output-format json
 
 # With specific tools allowed:
 claude -p "Your task" --allowedTools "Bash,Read,Write" > /tmp/output.txt 2>&1
@@ -148,9 +260,13 @@ echo "=== W3 ===" && echo "$W3"
 
 ## Core Pattern: Revision Loop (Multi-Round)
 
-When output needs revision, reference the previous output by file path and
-pass the critic feedback by file too. The CLI tool doesn't retain state between
-calls — context is carried by the orchestrator and injected into each new prompt.
+When output needs revision, you have two options:
+
+### Option A: File Reference (Context carried by orchestrator)
+
+Reference the previous output by file path and pass the critic feedback by file.
+The CLI tool doesn't retain state between calls — context is carried by the
+orchestrator and injected into each new prompt.
 
 ```bash
 RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
@@ -172,6 +288,33 @@ codex exec --full-auto -C /workdir \
 Embedding `$(cat "$RUN_DIR/report.md")` inside a shell heredoc risks executing
 `$(...)` expressions that appear in the agent's output. File references avoid
 this entirely and work for any output size.
+
+### Option B: Session Resume (Context preserved in session)
+
+Use session resume to continue the same conversation. The agent remembers
+everything from previous rounds without re-sending context.
+
+```bash
+RUN_DIR=$(mktemp -d /tmp/cli-agent-run-XXXXXX)
+
+# Round 1: Create session
+RESULT=$(claude -p "Write a report on X. Save to $RUN_DIR/report.md" \
+    --output-format json)
+SESSION_ID=$(echo "$RESULT" | jq -r '.session_id')
+echo "$SESSION_ID" > "$RUN_DIR/session.id"
+echo "$RESULT" | jq -r '.result'
+
+# Round 2: Resume session (agent remembers Round 1 context)
+claude -p "Section 2 lacks citations. Add at least 3 sources to your report." \
+    --resume "$(cat "$RUN_DIR/session.id")" \
+    --output-format json | jq -r '.result'
+```
+
+**When to use which:**
+- **File reference**: When using tools without session persistence (Codex exec,
+  Gemini), or when you want to curate what context to pass
+- **Session resume**: When using Claude CLI and want full context continuity
+  without re-sending large conversation histories
 
 The same rule applies to feedback: avoid `${CRITIC_FEEDBACK}` or other shell
 interpolation for model-generated text, because command substitutions and
@@ -197,6 +340,22 @@ Phase 4: if FAIL → revision round (pass current output + feedback to new exec)
 Phase 5: repeat until PASS or max iterations
 ```
 
+### With Session Persistence
+
+For iterative refinement with the same agent:
+
+```bash
+# Worker session
+WORKER_SESSION=$(claude -p "Implement feature X" --output-format json | jq -r '.session_id')
+
+# Critic feedback
+FEEDBACK="Missing error handling in the main function"
+
+# Revision round (same session, remembers original implementation)
+claude -p "The reviewer says: $FEEDBACK. Please fix this issue." \
+    --resume "$WORKER_SESSION" --output-format json | jq -r '.result'
+```
+
 ## Orchestrator Rules
 
 **Use output files, not stdout parsing.** Tell the agent to save results to a
@@ -220,3 +379,7 @@ directory concurrently can conflict and corrupt the shared state.
 worker output directly — no need to spawn a separate critic agent. Only spawn a
 separate critic when you want genuine evaluator independence (different model,
 different system prompt, no shared context with the workers).
+
+**Leverage session persistence for multi-round work.** When using Claude CLI,
+capture `session_id` and use `--resume` to continue conversations. This avoids
+re-sending large context and maintains agent memory of previous interactions.
