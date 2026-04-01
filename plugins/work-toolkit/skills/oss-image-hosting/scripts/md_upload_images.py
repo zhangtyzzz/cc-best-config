@@ -41,16 +41,17 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 
 # Patterns for stripping code regions before image scanning
 _FENCED_CODE_RE = re.compile(r'(^|\n)(```|~~~).*?\2\s*(\n|$)', re.DOTALL)
-_INDENTED_CODE_RE = re.compile(r'((?:^|\n)(?:[ ]{4}|\t).+)+', re.MULTILINE)
+_INDENTED_CODE_RE = re.compile(r'(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+')
 _INLINE_CODE_RE = re.compile(r'`[^`]+`')
 
 # Pattern that matches fenced code blocks, indented code blocks, and inline
 # code spans as tokens.  Anything not matched is prose.
+# Uses (?s:...) inline flag for the fenced block alternative only, so that
+# `.+` in the indented alternative does NOT match newlines.
 _CODE_TOKEN_RE = re.compile(
-    r'((?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$)'
-    r'|(?:(?:^|\n)(?:[ ]{4}|\t).+)+'
+    r'((?s:(?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$))'
+    r'|(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+'
     r'|`[^`]+`)',
-    re.DOTALL,
 )
 
 
@@ -175,18 +176,21 @@ def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
 
 def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
     """Ensure a lifecycle rule covers the ephemeral prefix. Returns True if
-    verified, False if not. Uploads should be blocked when unverified."""
+    verified or assumed (least-privilege), False only if we can confirm no rule
+    exists and cannot create one."""
     try:
         if _has_ephemeral_lifecycle(bucket):
             return True
     except oss2.exceptions.OssError:
+        # Cannot read lifecycle — assume it was configured out of band.
+        # Least-privilege credentials may lack GetBucketLifecycle but can
+        # still upload objects.  Warn but proceed.
         print(
-            "错误：无法读取生命周期规则（权限不足）。上传已取消以防止文件永久留存。\n"
-            "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
-            "或手动在 OSS 控制台配置生命周期规则后重试。",
+            "警告：无法读取生命周期规则（权限不足），假设已在控制台手动配置。\n"
+            "如未配置，上传的文件将不会自动删除。",
             file=sys.stderr,
         )
-        return False
+        return True
     try:
         setup_lifecycle(bucket)
         return True
