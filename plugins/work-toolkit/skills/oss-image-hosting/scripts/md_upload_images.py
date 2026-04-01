@@ -190,7 +190,7 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
 
     bucket = create_bucket()
     if not ensure_lifecycle(bucket):
-        return content
+        sys.exit(1)
     url_map: dict[str, str] = {}
 
     for raw_path, resolved_path in local_images.items():
@@ -204,9 +204,11 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
 
     def replace_md(m: re.Match) -> str:
         path_str = m.group(2)
-        if path_str in url_map:
+        # Normalize angle-bracketed paths to match upload keys
+        normalized = path_str[1:-1] if path_str.startswith("<") and path_str.endswith(">") else path_str
+        if normalized in url_map:
             title = m.group(3) or ""
-            return m.group(1) + url_map[path_str] + title + ")"
+            return m.group(1) + url_map[normalized] + title + ")"
         return m.group(0)
 
     def replace_html(m: re.Match) -> str:

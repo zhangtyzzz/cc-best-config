@@ -103,11 +103,12 @@ def get_missing_env_vars() -> list[str]:
 
 
 def get_python_exec() -> str:
-    """Return the venv python path if it exists, else system python3."""
+    """Return the interpreter that can import oss2."""
     venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
     if venv_python.exists():
         return str(venv_python)
-    return "python3"
+    # Fall back to the interpreter running this hook (not necessarily PATH python3)
+    return sys.executable
 
 
 def main() -> None:
