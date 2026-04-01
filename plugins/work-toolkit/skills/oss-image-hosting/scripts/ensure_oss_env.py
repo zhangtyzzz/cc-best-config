@@ -119,16 +119,38 @@ import os, sys
 try:
     import oss2
     from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
+    PREFIX = 'images/ephemeral'
     auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
     bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
     try:
         existing = bucket.get_bucket_lifecycle()
-        # Rules exist — verify at least one covers our prefix
+        # Check if any enabled rule with expiration covers our prefix
+        covered = False
+        for r in existing.rules:
+            if r.status != LifecycleRule.ENABLED:
+                continue
+            if r.expiration is None:
+                continue
+            rp = (r.prefix or '').rstrip('/')
+            if PREFIX.startswith(rp):
+                covered = True
+                break
+        if covered:
+            sys.exit(0)
+        # Not covered — try to create the rule
+        rules = list(existing.rules)
+        rule = LifecycleRule(
+            'auto-delete-ephemeral-images', PREFIX + '/',
+            status=LifecycleRule.ENABLED,
+            expiration=LifecycleExpiration(days=1),
+        )
+        rules.append(rule)
+        bucket.put_bucket_lifecycle(BucketLifecycle(rules))
         sys.exit(0)
     except oss2.exceptions.NoSuchLifecycle:
-        # No rules yet — verify we can create one (md_upload_images.py will need to)
+        # No rules yet — verify we can create one
         rule = LifecycleRule(
-            'auto-delete-ephemeral-images', 'images/ephemeral/',
+            'auto-delete-ephemeral-images', PREFIX + '/',
             status=LifecycleRule.ENABLED,
             expiration=LifecycleExpiration(days=1),
         )

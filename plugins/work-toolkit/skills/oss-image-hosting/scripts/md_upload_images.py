@@ -241,14 +241,20 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
         print("没有发现本地图片，无需处理。", file=sys.stderr)
         return content
 
-    print(f"发现 {len(local_images)} 张本地图片，开始上传...", file=sys.stderr)
+    # Filter to only existing files — avoid OSS setup when nothing is uploadable
+    uploadable = {k: v for k, v in local_images.items() if v.is_file()}
+    if not uploadable:
+        print("警告：所有本地图片路径均不存在，跳过上传。", file=sys.stderr)
+        return content
+
+    print(f"发现 {len(uploadable)} 张可上传的本地图片，开始上传...", file=sys.stderr)
 
     bucket = create_bucket()
     if not ensure_lifecycle(bucket):
         sys.exit(1)
     url_map: dict[str, str] = {}
 
-    for raw_path, resolved_path in local_images.items():
+    for raw_path, resolved_path in uploadable.items():
         signed_url = upload_and_sign(bucket, resolved_path)
         if signed_url:
             url_map[raw_path] = signed_url
