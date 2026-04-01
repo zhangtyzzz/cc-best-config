@@ -136,42 +136,45 @@ Create the `.excalidraw` file with appropriate elements:
 **Important**:
 - All visible text must be represented by explicit `text` elements with `fontFamily: 5` (Excalifont).
 - Do **not** rely on `rectangle.text`, `ellipse.text`, or `diamond.text` for primary labels. Those inline text fields are legacy placeholders and may render inconsistently in the PNG export pipeline.
-- Preferred pattern: create the shape first, then add a separate centered `text` element on top of it.
+- Preferred pattern: create the shape first, then add a separate `text` element bound via `containerId`/`boundElements`.
 
 ### Stable Text Rendering Rule
 
 For diagrams that will be exported to PNG, use this rule everywhere:
 
-1. Shapes (`rectangle`, `ellipse`, `diamond`) are for outlines/backgrounds only.
-2. Every title, node label, step label, and annotation should be a separate `text` element.
-3. Center the `text` element manually inside the shape by adjusting `x`, `y`, `width`, and `height`.
+1. Shapes (`rectangle`, `ellipse`, `diamond`) are for outlines/backgrounds only — do **not** set `text` on shapes.
+2. Every title, node label, step label, and annotation should be a separate `text` element with `containerId` pointing to its parent shape.
+3. The parent shape must list the text element in its `boundElements` array.
+4. All templates (flowchart, relationship, mindmap) follow this pattern.
 
 Good (bound text — stays attached when container moves):
 
 ```json
-{
-  "id": "box-1",
-  "type": "rectangle",
-  "x": 100,
-  "y": 100,
-  "width": 220,
-  "height": 100,
-  "boundElements": [{ "id": "box-1-text", "type": "text" }]
-}
-{
-  "id": "box-1-text",
-  "type": "text",
-  "x": 150,
-  "y": 132,
-  "width": 120,
-  "height": 40,
-  "containerId": "box-1",
-  "text": "核心执行引擎",
-  "fontSize": 20,
-  "fontFamily": 5,
-  "textAlign": "center",
-  "verticalAlign": "middle"
-}
+[
+  {
+    "id": "box-1",
+    "type": "rectangle",
+    "x": 100,
+    "y": 100,
+    "width": 220,
+    "height": 100,
+    "boundElements": [{ "id": "box-1-text", "type": "text" }]
+  },
+  {
+    "id": "box-1-text",
+    "type": "text",
+    "x": 150,
+    "y": 132,
+    "width": 120,
+    "height": 40,
+    "containerId": "box-1",
+    "text": "核心执行引擎",
+    "fontSize": 20,
+    "fontFamily": 5,
+    "textAlign": "center",
+    "verticalAlign": "middle"
+  }
+]
 ```
 
 Avoid:

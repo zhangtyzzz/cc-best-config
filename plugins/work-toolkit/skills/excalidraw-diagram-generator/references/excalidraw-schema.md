@@ -77,32 +77,34 @@ interface RectangleElement extends BaseElement {
 
 **Example (rectangle + bound text element):**
 ```json
-{
-  "id": "rect1",
-  "type": "rectangle",
-  "x": 100,
-  "y": 100,
-  "width": 200,
-  "height": 100,
-  "strokeColor": "#1e1e1e",
-  "backgroundColor": "#a5d8ff",
-  "roundness": { "type": 3 },
-  "boundElements": [{ "id": "rect1-text", "type": "text" }]
-}
-{
-  "id": "rect1-text",
-  "type": "text",
-  "x": 130,
-  "y": 130,
-  "width": 140,
-  "height": 40,
-  "containerId": "rect1",
-  "text": "My Box",
-  "fontSize": 20,
-  "fontFamily": 5,
-  "textAlign": "center",
-  "verticalAlign": "middle"
-}
+[
+  {
+    "id": "rect1",
+    "type": "rectangle",
+    "x": 100,
+    "y": 100,
+    "width": 200,
+    "height": 100,
+    "strokeColor": "#1e1e1e",
+    "backgroundColor": "#a5d8ff",
+    "roundness": { "type": 3 },
+    "boundElements": [{ "id": "rect1-text", "type": "text" }]
+  },
+  {
+    "id": "rect1-text",
+    "type": "text",
+    "x": 130,
+    "y": 130,
+    "width": 140,
+    "height": 40,
+    "containerId": "rect1",
+    "text": "My Box",
+    "fontSize": 20,
+    "fontFamily": 5,
+    "textAlign": "center",
+    "verticalAlign": "middle"
+  }
+]
 ```
 
 ### Ellipse
