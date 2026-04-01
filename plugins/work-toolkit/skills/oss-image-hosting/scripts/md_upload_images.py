@@ -33,7 +33,7 @@ LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns
-MD_IMAGE_RE = re.compile(r"(!\[[^\]]*\]\()([^)]+)(\))")
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()([^\s)]+)(\s*(?:"[^"]*")?\))')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -110,8 +110,8 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
 
 
 def ensure_lifecycle(bucket: oss2.Bucket) -> None:
-    """Ensure lifecycle rule exists; create it if missing. Best-effort — skip
-    silently when credentials lack bucket-level lifecycle permissions."""
+    """Ensure lifecycle rule exists; create it if missing. Warns clearly when
+    credentials lack bucket-level lifecycle permissions."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
@@ -120,12 +120,22 @@ def ensure_lifecycle(bucket: oss2.Bucket) -> None:
     except oss2.exceptions.NoSuchLifecycle:
         pass
     except oss2.exceptions.OssError:
-        # Insufficient permissions for lifecycle API — skip gracefully
+        print(
+            "⚠️ 无法读取生命周期规则（权限不足），上传的文件不会自动过期删除。"
+            "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
+            "或手动在 OSS 控制台配置生命周期规则。",
+            file=sys.stderr,
+        )
         return
     try:
         setup_lifecycle(bucket)
-    except oss2.exceptions.OssError as e:
-        print(f"⚠️ 无法设置生命周期规则（权限不足?）: {e}", file=sys.stderr)
+    except oss2.exceptions.OssError:
+        print(
+            "⚠️ 无法设置生命周期规则（权限不足），上传的文件不会自动过期删除。"
+            "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
+            "或手动在 OSS 控制台配置生命周期规则。",
+            file=sys.stderr,
+        )
 
 
 def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:
