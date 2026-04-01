@@ -211,7 +211,7 @@ Structure the complete Excalidraw file:
    ```
    This uses Excalidraw's native renderer via Playwright for pixel-perfect output. See the "PNG Export" section below for details and options.
 3. After export, verify that the PNG visibly contains all text labels. If labels are missing, the diagram is probably still relying on shape-inline text instead of standalone `text` elements.
-3. Inform user how to open/edit the source `.excalidraw` file:
+4. Inform user how to open/edit the source `.excalidraw` file:
    - Visit https://excalidraw.com
    - Click "Open" or drag-and-drop the file
    - Or use Excalidraw VS Code extension

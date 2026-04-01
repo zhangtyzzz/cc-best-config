@@ -26,7 +26,9 @@
       "version": 1,
       "versionNonce": 987654321,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [
+        { "id": "step1-text", "type": "text" }
+      ],
       "updated": 1706659200000,
       "link": null,
       "locked": false
@@ -38,6 +40,7 @@
       "y": 228,
       "width": 84,
       "height": 24,
+      "containerId": "step1-box",
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -118,7 +121,9 @@
       "version": 1,
       "versionNonce": 987654324,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [
+        { "id": "step2-text", "type": "text" }
+      ],
       "updated": 1706659200000,
       "link": null,
       "locked": false
@@ -130,6 +135,7 @@
       "y": 408,
       "width": 84,
       "height": 24,
+      "containerId": "step2-box",
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -210,7 +216,9 @@
       "version": 1,
       "versionNonce": 987654327,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [
+        { "id": "step3-text", "type": "text" }
+      ],
       "updated": 1706659200000,
       "link": null,
       "locked": false
@@ -222,6 +230,7 @@
       "y": 588,
       "width": 84,
       "height": 24,
+      "containerId": "step3-box",
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",

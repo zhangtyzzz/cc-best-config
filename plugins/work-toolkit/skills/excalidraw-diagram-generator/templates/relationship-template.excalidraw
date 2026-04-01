@@ -26,7 +26,9 @@
       "version": 1,
       "versionNonce": 2222222222,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [
+        { "id": "entity1-text", "type": "text" }
+      ],
       "updated": 1706659200000,
       "link": null,
       "locked": false
@@ -38,6 +40,7 @@
       "y": 338,
       "width": 90,
       "height": 24,
+      "containerId": "entity1-box",
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -87,7 +90,9 @@
       "version": 1,
       "versionNonce": 2222222224,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [
+        { "id": "entity2-text", "type": "text" }
+      ],
       "updated": 1706659200000,
       "link": null,
       "locked": false
@@ -99,6 +104,7 @@
       "y": 338,
       "width": 90,
       "height": 24,
+      "containerId": "entity2-box",
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -162,7 +168,7 @@
       "x": 500,
       "y": 318,
       "width": 80,
-      "height": 38,
+      "height": 20,
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
