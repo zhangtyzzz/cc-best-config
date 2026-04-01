@@ -39,6 +39,17 @@ HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
+# Patterns for stripping code regions before image scanning
+_FENCED_CODE_RE = re.compile(r'(^|\n)(```|~~~).*?\2\s*(\n|$)', re.DOTALL)
+_INLINE_CODE_RE = re.compile(r'`[^`]+`')
+
+
+def _strip_code_regions(text: str) -> str:
+    """Remove fenced code blocks and inline code spans so image regexes
+    don't match illustrative examples inside code."""
+    text = _FENCED_CODE_RE.sub('', text)
+    return _INLINE_CODE_RE.sub('', text)
+
 
 def load_env_file() -> None:
     """Load .env file from skill directory into os.environ."""
@@ -56,7 +67,7 @@ def load_env_file() -> None:
 
 
 def is_local_path(path: str) -> bool:
-    return not path.startswith(("http://", "https://", "data:"))
+    return not path.startswith(("http://", "https://", "//", "data:"))
 
 
 def make_oss_key(file_path: Path) -> str:
@@ -190,8 +201,10 @@ def resolve_path(raw_path: str, base_dir: Path | None) -> Path:
 def process_markdown(content: str, base_dir: Path | None) -> str:
     local_images: dict[str, Path] = {}
 
+    # Scan a code-stripped copy so examples in code blocks are not matched
+    stripped = _strip_code_regions(content)
     for pattern in (MD_IMAGE_RE, HTML_IMG_RE):
-        for m in pattern.finditer(content):
+        for m in pattern.finditer(stripped):
             path_str = m.group(2)
             # Strip CommonMark angle brackets: ![img](<path with spaces>)
             if path_str.startswith("<") and path_str.endswith(">"):

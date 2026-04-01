@@ -111,6 +111,36 @@ def get_python_exec() -> str:
     return sys.executable
 
 
+def check_lifecycle(python_exec: str) -> bool:
+    """Run a quick lifecycle check via the oss2 library to verify access."""
+    check_code = """
+import os, sys
+try:
+    import oss2
+    auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
+    bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
+    try:
+        bucket.get_bucket_lifecycle()
+    except oss2.exceptions.NoSuchLifecycle:
+        pass  # No rules yet is fine — md_upload_images.py will create one
+    sys.exit(0)
+except oss2.exceptions.OssError:
+    sys.exit(1)
+except Exception:
+    sys.exit(1)
+"""
+    try:
+        subprocess.check_call(
+            [python_exec, "-c", check_code],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=os.environ.copy(),
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
 def main() -> None:
     issues: list[str] = []
 
@@ -131,7 +161,7 @@ def main() -> None:
             f"请在 {ENV_FILE} 中配置（参考 .env.example）"
         )
 
-    # Step 3: Report
+    # Step 3: Verify lifecycle access (only if oss2 and env are ready)
     python_exec = get_python_exec()
     tag = "[OSS Image Hosting — Environment Check]"
 
@@ -139,6 +169,23 @@ def main() -> None:
         emit(
             "allow",
             "OSS environment not ready — see context",
+            f"{tag} OSS_READY=0. Issues: {'; '.join(issues)}. "
+            f"Tell the user about these blockers and help them fix it. "
+            f"Do not attempt to run md_upload_images.py until resolved.",
+        )
+        return
+
+    # Step 4: Check lifecycle access so md_upload_images.py won't fail later
+    lifecycle_ok = check_lifecycle(python_exec)
+    if not lifecycle_ok:
+        issues.append(
+            "无法验证 OSS 生命周期规则（权限不足或配置错误）。"
+            "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
+            "或手动在 OSS 控制台配置生命周期规则"
+        )
+        emit(
+            "allow",
+            "OSS environment not ready — lifecycle check failed",
             f"{tag} OSS_READY=0. Issues: {'; '.join(issues)}. "
             f"Tell the user about these blockers and help them fix it. "
             f"Do not attempt to run md_upload_images.py until resolved.",
