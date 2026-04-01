@@ -48,13 +48,6 @@ HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IG
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
-# Patterns for stripping code regions before image scanning.
-# CommonMark allows fenced blocks indented up to 3 spaces and multi-backtick spans.
-_FENCED_CODE_RE = re.compile(r'(^|\n)[ ]{0,3}(`{3,}|~{3,}).*?\2\s*(\n|$)', re.DOTALL)
-_INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
-# Indented code blocks: lines with 4+ spaces (or tab) preceded by a blank line.
-_INDENTED_CODE_RE = re.compile(r'(?:^|\n\n)((?:(?:[ ]{4}|\t)[^\n]*(?:\n|$))+)')
-
 # Pattern that matches fenced code blocks, indented code blocks, and inline
 # code spans as tokens.  Anything not matched is prose.
 # Uses separate alternatives for backtick and tilde fences with backreferences
@@ -66,14 +59,6 @@ _CODE_TOKEN_RE = re.compile(
     r'|(?:(?:^|\n\n)((?:(?:[ ]{4}|\t)[^\n]*(?:\n|$))+))'
     r'|(`+)(?!`).+?\5)',
 )
-
-
-def _strip_code_regions(text: str) -> str:
-    """Remove fenced code blocks, indented code blocks, and inline code spans
-    so image regexes don't match illustrative examples inside code."""
-    text = _FENCED_CODE_RE.sub('', text)
-    text = _INDENTED_CODE_RE.sub('', text)
-    return _INLINE_CODE_RE.sub('', text)
 
 
 def _replace_outside_code(content: str, replacer) -> str:
@@ -124,7 +109,7 @@ def _normalize_file_uri(path: str) -> str:
 
 
 def make_oss_key(file_path: Path) -> str:
-    content_hash = hashlib.md5(file_path.read_bytes()).hexdigest()[:8]
+    content_hash = hashlib.sha256(file_path.read_bytes()).hexdigest()[:12]
     return f"{OSS_PREFIX}/{content_hash}_{file_path.name}"
 
 
@@ -269,19 +254,29 @@ def resolve_path(raw_path: str, base_dir: Path | None) -> Path:
     return p.resolve()
 
 
+def _collect_local_images(content: str) -> set[str]:
+    """Scan prose regions of *content* for local image paths, skipping code blocks."""
+    paths: set[str] = set()
+
+    def scan(segment: str) -> str:
+        for pattern in (MD_IMAGE_RE, HTML_IMG_RE):
+            for m in pattern.finditer(segment):
+                path_str = m.group(2)
+                if path_str.startswith("<") and path_str.endswith(">"):
+                    path_str = path_str[1:-1]
+                if is_local_path(path_str):
+                    paths.add(path_str)
+        return segment  # unchanged — we only collect
+
+    _replace_outside_code(content, scan)
+    return paths
+
+
 def process_markdown(content: str, base_dir: Path | None) -> str:
     local_images: dict[str, Path] = {}
 
-    # Scan a code-stripped copy so examples in code blocks are not matched
-    stripped = _strip_code_regions(content)
-    for pattern in (MD_IMAGE_RE, HTML_IMG_RE):
-        for m in pattern.finditer(stripped):
-            path_str = m.group(2)
-            # Strip CommonMark angle brackets: ![img](<path with spaces>)
-            if path_str.startswith("<") and path_str.endswith(">"):
-                path_str = path_str[1:-1]
-            if is_local_path(path_str):
-                local_images[path_str] = resolve_path(path_str, base_dir)
+    for path_str in _collect_local_images(content):
+        local_images[path_str] = resolve_path(path_str, base_dir)
 
     if not local_images:
         print("没有发现本地图片，无需处理。", file=sys.stderr)
@@ -373,7 +368,6 @@ def main() -> None:
 
     if not content:
         # Empty file — pass through unchanged
-        sys.stdout.write("")
         return
 
     result = process_markdown(content, base_dir)

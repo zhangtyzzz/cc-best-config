@@ -37,6 +37,7 @@ claude plugin install work-toolkit
 | **image-gen** | 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64 编码、face 编辑、比例和分辨率控制。 |
 | **cli-agents** | 通过 exec 模式将任意 CLI AI 工具（Codex、Gemini CLI、Claude CLI 等）作为子 Agent 调用，进程退出即完成，结果写入文件直接读取，无需 tmux 或轮询。支持并行后台调用和多轮修订循环。 |
 | **critic-loop** | 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 CLI 工具时走 cli-agents 模式，循环直到所有标准通过。适合用标准判断质量的任务（调研报告、技术文档、有设计决策的代码），而非使用数字指标衡量的任务。 |
+| **oss-image-hosting** | 将 Markdown 中的本地图片上传到阿里云 OSS，生成短效签名 URL 并替换路径。PreToolUse hook 自动检测环境（oss2 安装、.env 配置），上传文件 1 天后通过 OSS 生命周期规则自动删除。 |
 
 ## 使用说明
 
@@ -44,6 +45,7 @@ claude plugin install work-toolkit
 - `baoyu-article-illustrator` 会先生成文章对应的 prompt 文件，再交给图片生成流程执行，不建议直接跳过这些中间产物。
 - `auto-research` 适合有明确、低成本、可重复评测的任务；如果指标主观或噪声太大，就不适合用它。
 - `cli-agents` 需要目标 CLI 工具已安装并完成认证。每次调用都是全新 session，上下文由编排者维护并在每次调用时注入，而非由 agent 自动保留。
+- `oss-image-hosting` 需要在 `.env` 中配置阿里云 OSS 凭证。首次使用时 hook 会自动安装 `oss2` 到本地 venv。
 
 ### Hooks
 
