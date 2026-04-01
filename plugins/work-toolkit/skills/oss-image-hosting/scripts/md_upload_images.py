@@ -34,13 +34,13 @@ LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
 # title + closing paren. Supports spaces, apostrophes in filenames (not after
-# whitespace, to avoid consuming titles), up to 2 levels of nested parens,
+# whitespace, to avoid consuming titles), up to 3 levels of nested parens,
 # and both quote styles for titles.
 MD_IMAGE_RE = re.compile(
     r"((?<!\\)!\[[^\]]*\]\()"                  # group(1): ![alt]( — skip backslash-escaped \!
     r"((?:[^()\"' \t]+|'(?!\s)|"              # group(2): path chars (apostrophe OK if not after space)
     r" (?!['\"])|"                            #   space OK if not followed by quote (title start)
-    r"\((?:[^()\"]+|\([^)]*\))*\))+?)"        #   nested parens up to 2 levels
+    r"\((?:[^()\"]+|\((?:[^()\"]+|\([^)]*\))*\))*\))+?)"  # nested parens up to 3 levels
     r"(\s+(?:\"[^\"]*\"|'[^']*'))?"           # group(3): optional title
     r"\)"                                     # closing paren
 )
@@ -52,23 +52,27 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 # CommonMark allows fenced blocks indented up to 3 spaces and multi-backtick spans.
 _FENCED_CODE_RE = re.compile(r'(^|\n)[ ]{0,3}(`{3,}|~{3,}).*?\2\s*(\n|$)', re.DOTALL)
 _INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
+# Indented code blocks: lines with 4+ spaces (or tab) preceded by a blank line.
+_INDENTED_CODE_RE = re.compile(r'(?:^|\n\n)((?:(?:[ ]{4}|\t)[^\n]*(?:\n|$))+)')
 
-# Pattern that matches fenced code blocks and inline code spans as tokens.
-# Anything not matched is prose.
+# Pattern that matches fenced code blocks, indented code blocks, and inline
+# code spans as tokens.  Anything not matched is prose.
 # Uses separate alternatives for backtick and tilde fences with backreferences
 # so a ``` block containing ~~~ (or vice versa) is not split early.
-# Inline code uses backreference \4 to match the same backtick run length.
+# Inline code uses backreference \5 to match the same backtick run length.
 _CODE_TOKEN_RE = re.compile(
     r'((?s:(?:^|\n)[ ]{0,3}(`{3,}).*?\2\s*(?:\n|$))'
     r'|(?s:(?:^|\n)[ ]{0,3}(~{3,}).*?\3\s*(?:\n|$))'
-    r'|(`+)(?!`).+?\4)',
+    r'|(?:(?:^|\n\n)((?:(?:[ ]{4}|\t)[^\n]*(?:\n|$))+))'
+    r'|(`+)(?!`).+?\5)',
 )
 
 
 def _strip_code_regions(text: str) -> str:
-    """Remove fenced code blocks and inline code spans so image regexes
-    don't match illustrative examples inside code."""
+    """Remove fenced code blocks, indented code blocks, and inline code spans
+    so image regexes don't match illustrative examples inside code."""
     text = _FENCED_CODE_RE.sub('', text)
+    text = _INDENTED_CODE_RE.sub('', text)
     return _INLINE_CODE_RE.sub('', text)
 
 
