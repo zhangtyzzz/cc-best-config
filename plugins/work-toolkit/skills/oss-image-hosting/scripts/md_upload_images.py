@@ -111,33 +111,35 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
     )
 
 
-def ensure_lifecycle(bucket: oss2.Bucket) -> None:
-    """Ensure lifecycle rule exists; create it if missing. Warns clearly when
-    credentials lack bucket-level lifecycle permissions."""
+def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
+    """Ensure lifecycle rule exists. Returns True if verified, False if not.
+    Uploads should be blocked when lifecycle cannot be confirmed."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
             if r.id == LIFECYCLE_RULE_ID:
-                return  # already configured
+                return True
     except oss2.exceptions.NoSuchLifecycle:
         pass
     except oss2.exceptions.OssError:
         print(
-            "⚠️ 无法读取生命周期规则（权限不足），上传的文件不会自动过期删除。"
+            "错误：无法读取生命周期规则（权限不足）。上传已取消以防止文件永久留存。\n"
             "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
-            "或手动在 OSS 控制台配置生命周期规则。",
+            "或手动在 OSS 控制台配置生命周期规则后重试。",
             file=sys.stderr,
         )
-        return
+        return False
     try:
         setup_lifecycle(bucket)
+        return True
     except oss2.exceptions.OssError:
         print(
-            "⚠️ 无法设置生命周期规则（权限不足），上传的文件不会自动过期删除。"
+            "错误：无法设置生命周期规则（权限不足）。上传已取消以防止文件永久留存。\n"
             "请使用有 bucket 管理权限的 AK 运行 --setup-lifecycle，"
-            "或手动在 OSS 控制台配置生命周期规则。",
+            "或手动在 OSS 控制台配置生命周期规则后重试。",
             file=sys.stderr,
         )
+        return False
 
 
 def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:
@@ -174,6 +176,9 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
     for pattern in (MD_IMAGE_RE, HTML_IMG_RE):
         for m in pattern.finditer(content):
             path_str = m.group(2)
+            # Strip CommonMark angle brackets: ![img](<path with spaces>)
+            if path_str.startswith("<") and path_str.endswith(">"):
+                path_str = path_str[1:-1]
             if is_local_path(path_str):
                 local_images[path_str] = resolve_path(path_str, base_dir)
 
@@ -184,7 +189,8 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
     print(f"发现 {len(local_images)} 张本地图片，开始上传...", file=sys.stderr)
 
     bucket = create_bucket()
-    ensure_lifecycle(bucket)
+    if not ensure_lifecycle(bucket):
+        return content
     url_map: dict[str, str] = {}
 
     for raw_path, resolved_path in local_images.items():

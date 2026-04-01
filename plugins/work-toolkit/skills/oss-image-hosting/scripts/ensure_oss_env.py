@@ -43,9 +43,14 @@ def _venv_subdir() -> str:
     return "Scripts" if sys.platform == "win32" else "bin"
 
 
+def _exe(name: str) -> str:
+    """Append .exe on Windows."""
+    return f"{name}.exe" if sys.platform == "win32" else name
+
+
 def check_oss2() -> bool:
     """Check oss2 availability in venv first, then system python."""
-    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / "python"
+    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
     python_exec = str(venv_python) if venv_python.exists() else sys.executable
     try:
         subprocess.check_call(
@@ -68,7 +73,7 @@ def install_oss2() -> bool:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-        pip = venv_dir / _venv_subdir() / "pip"
+        pip = venv_dir / _venv_subdir() / _exe("pip")
         subprocess.check_call(
             [str(pip), "install", "--quiet", "oss2"],
             stdout=subprocess.DEVNULL,
@@ -99,7 +104,7 @@ def get_missing_env_vars() -> list[str]:
 
 def get_python_exec() -> str:
     """Return the venv python path if it exists, else system python3."""
-    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / "python"
+    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
     if venv_python.exists():
         return str(venv_python)
     return "python3"
