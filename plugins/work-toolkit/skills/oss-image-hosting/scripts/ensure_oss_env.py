@@ -162,8 +162,11 @@ try:
         )
         bucket.put_bucket_lifecycle(BucketLifecycle([rule]))
         sys.exit(0)
-except oss2.exceptions.OssError:
-    sys.exit(1)
+    except oss2.exceptions.OssError:
+        # Cannot read/write lifecycle — assume configured out of band.
+        # Least-privilege credentials (upload-only) are valid; md_upload_images.py
+        # handles this case the same way.
+        sys.exit(0)
 except Exception:
     sys.exit(1)
 """

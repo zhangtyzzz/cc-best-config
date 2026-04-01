@@ -35,7 +35,7 @@ LIFECYCLE_DAYS = 1  # OSS minimum granularity
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
 # title + closing paren. Supports spaces, balanced parens, and both quote styles.
 MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"\']+|\([^)]*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
-HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
+HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
@@ -153,16 +153,23 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
     )
 
 
+LIFECYCLE_MAX_DAYS = 7  # reject broader rules with very long TTL
+
+
 def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
-    """Check if any enabled lifecycle rule with expiration covers the ephemeral prefix.
-    A rule covers our prefix if the rule's prefix is a parent of (or equal to)
-    OSS_PREFIX, e.g. '', 'images/', or 'images/ephemeral' all cover 'images/ephemeral'."""
+    """Check if any enabled lifecycle rule with short expiration covers the
+    ephemeral prefix. A rule covers our prefix if the rule's prefix is a parent
+    of (or equal to) OSS_PREFIX. Only rules with expiration ≤ LIFECYCLE_MAX_DAYS
+    are accepted to avoid false positives from broad, long-lived rules."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
             if r.status != LifecycleRule.ENABLED:
                 continue
             if r.expiration is None:
+                continue
+            # Only accept rules with short retention
+            if r.expiration.days is not None and r.expiration.days > LIFECYCLE_MAX_DAYS:
                 continue
             rule_prefix = (r.prefix or "").rstrip("/")
             target_prefix = OSS_PREFIX.rstrip("/")
