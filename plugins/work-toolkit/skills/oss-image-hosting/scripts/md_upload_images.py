@@ -32,8 +32,9 @@ SIGN_EXPIRY = 3600  # 1 hour
 LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
-# Markdown image patterns
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()([^\s)]+)(\s*(?:"[^"]*")?\))')
+# Markdown image patterns — group(2) captures the path, allowing spaces in filenames
+# and optional titles like ![alt](path "title")
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()(.+?)(\s*(?:"[^"]*")?\))')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
