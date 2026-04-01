@@ -48,19 +48,25 @@ def _exe(name: str) -> str:
     return f"{name}.exe" if sys.platform == "win32" else name
 
 
-def check_oss2() -> bool:
-    """Check oss2 availability in venv first, then system python."""
-    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
-    python_exec = str(venv_python) if venv_python.exists() else sys.executable
+def _can_import_oss2(python: str) -> bool:
+    """Check if a given Python interpreter can import oss2."""
     try:
         subprocess.check_call(
-            [python_exec, "-c", "import oss2"],
+            [python, "-c", "import oss2"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
+
+
+def check_oss2() -> bool:
+    """Check oss2 availability in venv first, then fall back to system python."""
+    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
+    if venv_python.exists() and _can_import_oss2(str(venv_python)):
+        return True
+    return _can_import_oss2(sys.executable)
 
 
 def install_oss2() -> bool:
@@ -105,7 +111,7 @@ def get_missing_env_vars() -> list[str]:
 def get_python_exec() -> str:
     """Return the interpreter that can import oss2."""
     venv_python = SKILL_DIR / ".venv" / _venv_subdir() / _exe("python")
-    if venv_python.exists():
+    if venv_python.exists() and _can_import_oss2(str(venv_python)):
         return str(venv_python)
     # Fall back to the interpreter running this hook (not necessarily PATH python3)
     return sys.executable

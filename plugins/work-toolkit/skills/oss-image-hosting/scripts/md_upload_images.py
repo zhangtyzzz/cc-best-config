@@ -41,27 +41,32 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 
 # Patterns for stripping code regions before image scanning
 _FENCED_CODE_RE = re.compile(r'(^|\n)(```|~~~).*?\2\s*(\n|$)', re.DOTALL)
+_INDENTED_CODE_RE = re.compile(r'((?:^|\n)(?:[ ]{4}|\t).+)+', re.MULTILINE)
 _INLINE_CODE_RE = re.compile(r'`[^`]+`')
 
-# Pattern that matches fenced code blocks and inline code spans as tokens.
-# Group 1 captures the token; anything not matched is prose.
+# Pattern that matches fenced code blocks, indented code blocks, and inline
+# code spans as tokens.  Anything not matched is prose.
 _CODE_TOKEN_RE = re.compile(
-    r'((?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$)|`[^`]+`)',
+    r'((?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$)'
+    r'|(?:(?:^|\n)(?:[ ]{4}|\t).+)+'
+    r'|`[^`]+`)',
     re.DOTALL,
 )
 
 
 def _strip_code_regions(text: str) -> str:
-    """Remove fenced code blocks and inline code spans so image regexes
-    don't match illustrative examples inside code."""
+    """Remove fenced code blocks, indented code blocks, and inline code spans
+    so image regexes don't match illustrative examples inside code."""
     text = _FENCED_CODE_RE.sub('', text)
+    text = _INDENTED_CODE_RE.sub('', text)
     return _INLINE_CODE_RE.sub('', text)
 
 
 def _replace_outside_code(content: str, replacer) -> str:
     """Apply *replacer(segment)* only to parts of *content* that are outside
-    fenced code blocks and inline code spans.  Code tokens are preserved
-    verbatim so image-like examples inside code are never rewritten."""
+    fenced code blocks, indented code blocks, and inline code spans.  Code
+    tokens are preserved verbatim so image-like examples inside code are never
+    rewritten."""
     parts: list[str] = []
     last_end = 0
     for m in _CODE_TOKEN_RE.finditer(content):
@@ -243,6 +248,9 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
 
     # Filter to only existing files — avoid OSS setup when nothing is uploadable
     uploadable = {k: v for k, v in local_images.items() if v.is_file()}
+    missing = {k: v for k, v in local_images.items() if not v.is_file()}
+    for raw_path, resolved_path in missing.items():
+        print(f"警告：文件不存在，跳过: {resolved_path}", file=sys.stderr)
     if not uploadable:
         print("警告：所有本地图片路径均不存在，跳过上传。", file=sys.stderr)
         return content
