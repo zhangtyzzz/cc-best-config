@@ -137,7 +137,7 @@ try:
         rules = list(existing.rules)
     except oss2.exceptions.NoSuchLifecycle:
         rules = []
-    except oss2.exceptions.OssError:
+    except oss2.exceptions.AccessDenied:
         # Cannot read lifecycle — assume configured out of band.
         # md_upload_images.py handles this identically (warn and proceed).
         sys.exit(0)
@@ -149,7 +149,7 @@ try:
             continue
         if r.expiration is None:
             continue
-        if r.expiration.days is not None and r.expiration.days > MAX_DAYS:
+        if r.expiration.days is None or r.expiration.days > MAX_DAYS:
             continue
         rp = (r.prefix or '').rstrip('/')
         if PREFIX.startswith(rp):

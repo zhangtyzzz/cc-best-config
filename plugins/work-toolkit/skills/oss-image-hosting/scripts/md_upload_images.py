@@ -33,9 +33,9 @@ LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
-# title + closing paren. Supports spaces, balanced parens, apostrophes in paths,
-# and both quote styles for titles.
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
+# title + closing paren. Supports spaces, apostrophes, and up to 2 levels of
+# nested parentheses in paths, plus both quote styles for titles.
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\((?:[^()"]+|\([^)]*\))*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -165,8 +165,8 @@ def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
                 continue
             if r.expiration is None:
                 continue
-            # Only accept rules with short retention
-            if r.expiration.days is not None and r.expiration.days > LIFECYCLE_MAX_DAYS:
+            # Only accept day-based rules with short retention
+            if r.expiration.days is None or r.expiration.days > LIFECYCLE_MAX_DAYS:
                 continue
             rule_prefix = (r.prefix or "").rstrip("/")
             target_prefix = OSS_PREFIX.rstrip("/")
@@ -185,7 +185,7 @@ def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
     try:
         if _has_ephemeral_lifecycle(bucket):
             return True
-    except oss2.exceptions.OssError:
+    except oss2.exceptions.AccessDenied:
         # Cannot read lifecycle — assume it was configured out of band.
         # Least-privilege credentials may lack GetBucketLifecycle but can
         # still upload objects.  Warn but proceed.
@@ -195,6 +195,13 @@ def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
             file=sys.stderr,
         )
         return True
+    except oss2.exceptions.OssError:
+        print(
+            "错误：无法读取生命周期规则。上传已取消。\n"
+            "请检查 OSS_ENDPOINT 和 OSS_BUCKET 配置是否正确。",
+            file=sys.stderr,
+        )
+        return False
     try:
         setup_lifecycle(bucket)
         return True
