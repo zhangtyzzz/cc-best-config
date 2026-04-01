@@ -50,14 +50,15 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 
 # Pattern that matches fenced code blocks, indented code blocks, and inline
 # code spans as tokens.  Anything not matched is prose.
-# Uses separate alternatives for backtick and tilde fences with backreferences
-# so a ``` block containing ~~~ (or vice versa) is not split early.
+# Closing fences are anchored to line starts (up to 3 leading spaces) so
+# embedded fence tokens like print("```") don't terminate the block early.
 # Inline code uses backreference \5 to match the same backtick run length.
 _CODE_TOKEN_RE = re.compile(
-    r'((?s:(?:^|\n)[ ]{0,3}(`{3,}).*?\2\s*(?:\n|$))'
-    r'|(?s:(?:^|\n)[ ]{0,3}(~{3,}).*?\3\s*(?:\n|$))'
+    r'((?:^|\n)[ ]{0,3}(`{3,})[^\n]*\n(?:.*?\n)?[ ]{0,3}\2[^\S\n]*(?:\n|$))'
+    r'|(?:(?:^|\n)[ ]{0,3}(~{3,})[^\n]*\n(?:.*?\n)?[ ]{0,3}\3[^\S\n]*(?:\n|$))'
     r'|(?:(?:^|\n\n)((?:(?:[ ]{4}|\t)[^\n]*(?:\n|$))+))'
-    r'|(`+)(?!`).+?\5)',
+    r'|(`+)(?!`).+?\5',
+    re.DOTALL,
 )
 
 
@@ -246,6 +247,9 @@ def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:
 
 def resolve_path(raw_path: str, base_dir: Path | None) -> Path:
     raw_path = _normalize_file_uri(raw_path)
+    # Strip URL fragment (#...) and query (?...) suffixes common in GFM
+    # (e.g. ./diagram.png#gh-dark-mode-only, ./chart.png?raw=1)
+    raw_path = re.split(r'[#?]', raw_path, maxsplit=1)[0]
     p = Path(raw_path)
     if p.is_absolute():
         return p
