@@ -56,9 +56,10 @@ _INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
 # Pattern that matches fenced code blocks and inline code spans as tokens.
 # Anything not matched is prose.
 # Uses (?s:...) inline flag for the fenced block alternative only.
+# Inline code uses backreference \2 to match the same backtick run length.
 _CODE_TOKEN_RE = re.compile(
     r'((?s:(?:^|\n)[ ]{0,3}(?:`{3,}|~{3,}).*?(?:`{3,}|~{3,})\s*(?:\n|$))'
-    r'|(?:`+)(?!`).+?(?:`+))',
+    r'|(`+)(?!`).+?\2)',
 )
 
 
@@ -103,7 +104,16 @@ def load_env_file() -> None:
 
 
 def is_local_path(path: str) -> bool:
-    return not path.startswith(("http://", "https://", "//", "data:"))
+    return path.startswith("file://") or not path.startswith(("http://", "https://", "//", "data:"))
+
+
+def _normalize_file_uri(path: str) -> str:
+    """Convert file:// URIs to bare filesystem paths."""
+    if path.startswith("file:///"):
+        return path[7:]  # file:///Users/... -> /Users/...
+    if path.startswith("file://"):
+        return path[7:]  # file://host/path -> host/path (rare, treat as relative)
+    return path
 
 
 def make_oss_key(file_path: Path) -> str:
@@ -243,6 +253,7 @@ def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:
 
 
 def resolve_path(raw_path: str, base_dir: Path | None) -> Path:
+    raw_path = _normalize_file_uri(raw_path)
     p = Path(raw_path)
     if p.is_absolute():
         return p
