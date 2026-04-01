@@ -112,11 +112,20 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
 
 
 def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
-    """Check if any lifecycle rule covers the ephemeral prefix."""
+    """Check if any enabled lifecycle rule with expiration covers the ephemeral prefix.
+    A rule covers our prefix if the rule's prefix is a parent of (or equal to)
+    OSS_PREFIX, e.g. '', 'images/', or 'images/ephemeral' all cover 'images/ephemeral'."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
-            if (r.prefix or "").rstrip("/").startswith(OSS_PREFIX):
+            if r.status != LifecycleRule.ENABLED:
+                continue
+            if r.expiration is None:
+                continue
+            rule_prefix = (r.prefix or "").rstrip("/")
+            target_prefix = OSS_PREFIX.rstrip("/")
+            # Rule covers our prefix if rule_prefix is a prefix of target_prefix
+            if target_prefix.startswith(rule_prefix):
                 return True
     except oss2.exceptions.NoSuchLifecycle:
         pass
