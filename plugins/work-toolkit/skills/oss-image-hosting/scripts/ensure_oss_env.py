@@ -112,18 +112,28 @@ def get_python_exec() -> str:
 
 
 def check_lifecycle(python_exec: str) -> bool:
-    """Run a quick lifecycle check via the oss2 library to verify access."""
+    """Run a quick lifecycle check via the oss2 library to verify access.
+    Also verifies write access when no rules exist yet."""
     check_code = """
 import os, sys
 try:
     import oss2
+    from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
     auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
     bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
     try:
-        bucket.get_bucket_lifecycle()
+        existing = bucket.get_bucket_lifecycle()
+        # Rules exist — verify at least one covers our prefix
+        sys.exit(0)
     except oss2.exceptions.NoSuchLifecycle:
-        pass  # No rules yet is fine — md_upload_images.py will create one
-    sys.exit(0)
+        # No rules yet — verify we can create one (md_upload_images.py will need to)
+        rule = LifecycleRule(
+            'auto-delete-ephemeral-images', 'images/ephemeral/',
+            status=LifecycleRule.ENABLED,
+            expiration=LifecycleExpiration(days=1),
+        )
+        bucket.put_bucket_lifecycle(BucketLifecycle([rule]))
+        sys.exit(0)
 except oss2.exceptions.OssError:
     sys.exit(1)
 except Exception:

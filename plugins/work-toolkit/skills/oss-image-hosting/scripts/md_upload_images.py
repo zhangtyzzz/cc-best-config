@@ -43,12 +43,37 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 _FENCED_CODE_RE = re.compile(r'(^|\n)(```|~~~).*?\2\s*(\n|$)', re.DOTALL)
 _INLINE_CODE_RE = re.compile(r'`[^`]+`')
 
+# Pattern that matches fenced code blocks and inline code spans as tokens.
+# Group 1 captures the token; anything not matched is prose.
+_CODE_TOKEN_RE = re.compile(
+    r'((?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$)|`[^`]+`)',
+    re.DOTALL,
+)
+
 
 def _strip_code_regions(text: str) -> str:
     """Remove fenced code blocks and inline code spans so image regexes
     don't match illustrative examples inside code."""
     text = _FENCED_CODE_RE.sub('', text)
     return _INLINE_CODE_RE.sub('', text)
+
+
+def _replace_outside_code(content: str, replacer) -> str:
+    """Apply *replacer(segment)* only to parts of *content* that are outside
+    fenced code blocks and inline code spans.  Code tokens are preserved
+    verbatim so image-like examples inside code are never rewritten."""
+    parts: list[str] = []
+    last_end = 0
+    for m in _CODE_TOKEN_RE.finditer(content):
+        # Prose before this code token — apply replacements
+        prose = content[last_end:m.start()]
+        parts.append(replacer(prose))
+        # Code token — keep as-is
+        parts.append(m.group(0))
+        last_end = m.end()
+    # Remaining prose after last code token
+    parts.append(replacer(content[last_end:]))
+    return "".join(parts)
 
 
 def load_env_file() -> None:
@@ -247,8 +272,10 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
             return m.group(1) + url_map[path_str] + m.group(3)
         return m.group(0)
 
-    content = MD_IMAGE_RE.sub(replace_md, content)
-    content = HTML_IMG_RE.sub(replace_html, content)
+    content = _replace_outside_code(
+        content,
+        lambda seg: HTML_IMG_RE.sub(replace_html, MD_IMAGE_RE.sub(replace_md, seg)),
+    )
 
     print(f"✅ 已替换 {len(url_map)} 张图片链接。", file=sys.stderr)
     return content
