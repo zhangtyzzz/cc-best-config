@@ -32,7 +32,7 @@ hooks:
 
 ## 使用方式
 
-脚本位于 `scripts/md_upload_images.py`（相对于本 skill 目录）。PreToolUse hook 会自动检测环境并在 additionalContext 中返回正确的调用命令（含解释器路径），agent 应直接使用 hook 返回的命令。以下示例中 `$PYTHON` 代表 hook 返回的解释器路径：
+**必须使用 PreToolUse hook 返回的解释器路径和脚本路径。** Hook 的 additionalContext 会返回形如 `Use \`/path/to/.venv/bin/python /path/to/scripts/md_upload_images.py\`` 的完整命令 — 直接复用这个路径，不要自己 `which python3` 或拼路径。系统 python 通常没有 oss2 依赖，只有 hook 自动创建的 .venv 里才有。
 
 ```bash
 # 处理 markdown 文件，输出替换后内容到 stdout
@@ -44,6 +44,8 @@ $PYTHON ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content "![图](./char
 # 一次性设置 OSS 生命周期规则（首次使用时自动执行，也可手动运行）
 $PYTHON ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --setup-lifecycle
 ```
+
+> 上面的 `$PYTHON` 和 `${CLAUDE_SKILL_DIR}` 会由 hook 和 Claude Code 在运行时替换为实际路径。
 
 ## 与其他 skill 配合
 
