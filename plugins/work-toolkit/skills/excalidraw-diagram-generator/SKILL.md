@@ -131,7 +131,6 @@ Create the `.excalidraw` file with appropriate elements:
 - **Size**: `width`, `height`
 - **Style**: `strokeColor`, `backgroundColor`, `fillStyle`
 - **Font**: `fontFamily: 5` (Excalifont - **required for all text elements**)
-- **Text**: Embedded text for labels
 - **Connections**: `points` array for arrows
 
 **Important**:
@@ -147,7 +146,7 @@ For diagrams that will be exported to PNG, use this rule everywhere:
 2. Every title, node label, step label, and annotation should be a separate `text` element.
 3. Center the `text` element manually inside the shape by adjusting `x`, `y`, `width`, and `height`.
 
-Good:
+Good (bound text — stays attached when container moves):
 
 ```json
 {
@@ -156,7 +155,8 @@ Good:
   "x": 100,
   "y": 100,
   "width": 220,
-  "height": 100
+  "height": 100,
+  "boundElements": [{ "id": "box-1-text", "type": "text" }]
 }
 {
   "id": "box-1-text",
@@ -165,10 +165,12 @@ Good:
   "y": 132,
   "width": 120,
   "height": 40,
+  "containerId": "box-1",
   "text": "核心执行引擎",
   "fontSize": 20,
   "fontFamily": 5,
-  "textAlign": "center"
+  "textAlign": "center",
+  "verticalAlign": "middle"
 }
 ```
 
