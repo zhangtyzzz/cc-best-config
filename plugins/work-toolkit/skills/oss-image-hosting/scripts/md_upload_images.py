@@ -37,7 +37,7 @@ LIFECYCLE_DAYS = 1  # OSS minimum granularity
 # whitespace, to avoid consuming titles), up to 2 levels of nested parens,
 # and both quote styles for titles.
 MD_IMAGE_RE = re.compile(
-    r"(!\[[^\]]*\]\()"                        # group(1): ![alt](
+    r"((?<!\\)!\[[^\]]*\]\()"                  # group(1): ![alt]( — skip backslash-escaped \!
     r"((?:[^()\"' \t]+|'(?!\s)|"              # group(2): path chars (apostrophe OK if not after space)
     r" (?!['\"])|"                            #   space OK if not followed by quote (title start)
     r"\((?:[^()\"]+|\([^)]*\))*\))+?)"        #   nested parens up to 2 levels
@@ -55,11 +55,13 @@ _INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
 
 # Pattern that matches fenced code blocks and inline code spans as tokens.
 # Anything not matched is prose.
-# Uses (?s:...) inline flag for the fenced block alternative only.
-# Inline code uses backreference \2 to match the same backtick run length.
+# Uses separate alternatives for backtick and tilde fences with backreferences
+# so a ``` block containing ~~~ (or vice versa) is not split early.
+# Inline code uses backreference \4 to match the same backtick run length.
 _CODE_TOKEN_RE = re.compile(
-    r'((?s:(?:^|\n)[ ]{0,3}(?:`{3,}|~{3,}).*?(?:`{3,}|~{3,})\s*(?:\n|$))'
-    r'|(`+)(?!`).+?\2)',
+    r'((?s:(?:^|\n)[ ]{0,3}(`{3,}).*?\2\s*(?:\n|$))'
+    r'|(?s:(?:^|\n)[ ]{0,3}(~{3,}).*?\3\s*(?:\n|$))'
+    r'|(`+)(?!`).+?\4)',
 )
 
 
