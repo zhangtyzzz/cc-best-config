@@ -223,7 +223,7 @@ interface TextElement extends BaseElement {
 For stable exports, especially when using `export-to-png.mjs`, prefer this structure:
 
 1. Draw the node shape (`rectangle`, `ellipse`, `diamond`) without inline text.
-2. Add a separate `text` element above it.
+2. Add a separate `text` element bound via `containerId`.
 3. Use `fontFamily: 5` for all `text` elements.
 
 This is more reliable than embedding labels directly in shape elements.
