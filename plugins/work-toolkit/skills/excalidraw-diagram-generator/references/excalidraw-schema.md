@@ -67,31 +67,41 @@ interface BaseElement {
 interface RectangleElement extends BaseElement {
   type: "rectangle";
   roundness: { type: 3 };      // 3 = rounded corners
-  text?: string;               // Optional text inside
-  fontSize?: number;           // Font size (16-32 typical)
-  fontFamily?: number;         // 1 = Virgil, 2 = Helvetica, 3 = Cascadia
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
 
-**Example:**
+> Shapes no longer carry text fields. Use a separate `text` element with `containerId` instead (see [Recommended Labeling Strategy](#recommended-labeling-strategy)).
+
+**Example (rectangle + bound text element):**
 ```json
-{
-  "id": "rect1",
-  "type": "rectangle",
-  "x": 100,
-  "y": 100,
-  "width": 200,
-  "height": 100,
-  "strokeColor": "#1e1e1e",
-  "backgroundColor": "#a5d8ff",
-  "text": "My Box",
-  "fontSize": 20,
-  "textAlign": "center",
-  "verticalAlign": "middle",
-  "roundness": { "type": 3 }
-}
+[
+  {
+    "id": "rect1",
+    "type": "rectangle",
+    "x": 100,
+    "y": 100,
+    "width": 200,
+    "height": 100,
+    "strokeColor": "#1e1e1e",
+    "backgroundColor": "#a5d8ff",
+    "roundness": { "type": 3 },
+    "boundElements": [{ "id": "rect1-text", "type": "text" }]
+  },
+  {
+    "id": "rect1-text",
+    "type": "text",
+    "x": 130,
+    "y": 130,
+    "width": 140,
+    "height": 40,
+    "containerId": "rect1",
+    "text": "My Box",
+    "fontSize": 20,
+    "fontFamily": 5,
+    "textAlign": "center",
+    "verticalAlign": "middle"
+  }
+]
 ```
 
 ### Ellipse
@@ -99,11 +109,6 @@ interface RectangleElement extends BaseElement {
 ```typescript
 interface EllipseElement extends BaseElement {
   type: "ellipse";
-  text?: string;
-  fontSize?: number;
-  fontFamily?: number;
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
 
@@ -112,11 +117,6 @@ interface EllipseElement extends BaseElement {
 ```typescript
 interface DiamondElement extends BaseElement {
   type: "diamond";
-  text?: string;
-  fontSize?: number;
-  fontFamily?: number;
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
 
@@ -176,7 +176,7 @@ interface TextElement extends BaseElement {
   type: "text";
   text: string;
   fontSize: number;
-  fontFamily: number;          // 1-3
+  fontFamily: number;          // Prefer 5 = Excalifont for stable document exports
   textAlign: "left" | "center" | "right";
   verticalAlign: "top" | "middle" | "bottom";
   roundness: null;             // Text has no roundness
@@ -194,7 +194,7 @@ interface TextElement extends BaseElement {
   "height": 25,
   "text": "Hello World",
   "fontSize": 20,
-  "fontFamily": 1,
+  "fontFamily": 5,
   "textAlign": "left",
   "verticalAlign": "top",
   "roundness": null
@@ -204,6 +204,16 @@ interface TextElement extends BaseElement {
 **Width/Height calculation:**
 - Width ≈ `text.length * fontSize * 0.6`
 - Height ≈ `fontSize * 1.2 * numberOfLines`
+
+## Recommended Labeling Strategy
+
+For stable exports, especially when using `export-to-png.mjs`, prefer this structure:
+
+1. Draw the node shape (`rectangle`, `ellipse`, `diamond`) without inline text.
+2. Add a separate `text` element bound via `containerId`.
+3. Use `fontFamily: 5` for all `text` elements.
+
+This is more reliable than embedding labels directly in shape elements.
 
 ## Bindings
 
@@ -280,9 +290,10 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
 
 | ID | Name | Description |
 |----|------|-------------|
-| 1 | Virgil | Hand-drawn style (default) |
+| 1 | Virgil | Hand-drawn style |
 | 2 | Helvetica | Clean sans-serif |
 | 3 | Cascadia | Monospace |
+| 5 | Excalifont | Recommended default for stable exports |
 
 ## Validation Rules
 
@@ -330,13 +341,42 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
       "version": 1,
       "versionNonce": 987654321,
       "isDeleted": false,
+      "boundElements": [{ "id": "box1-text", "type": "text" }],
+      "updated": 1706659200000,
+      "link": null,
+      "locked": false
+    },
+    {
+      "id": "box1-text",
+      "type": "text",
+      "x": 160,
+      "y": 138,
+      "width": 80,
+      "height": 24,
+      "containerId": "box1",
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a0G",
+      "roundness": null,
+      "seed": 1234567891,
+      "version": 1,
+      "versionNonce": 987654322,
+      "isDeleted": false,
       "boundElements": null,
       "updated": 1706659200000,
       "link": null,
       "locked": false,
       "text": "Hello",
       "fontSize": 20,
-      "fontFamily": 1,
+      "fontFamily": 5,
       "textAlign": "center",
       "verticalAlign": "middle"
     }

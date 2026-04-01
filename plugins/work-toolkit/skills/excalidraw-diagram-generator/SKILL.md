@@ -131,10 +131,61 @@ Create the `.excalidraw` file with appropriate elements:
 - **Size**: `width`, `height`
 - **Style**: `strokeColor`, `backgroundColor`, `fillStyle`
 - **Font**: `fontFamily: 5` (Excalifont - **required for all text elements**)
-- **Text**: Embedded text for labels
 - **Connections**: `points` array for arrows
 
-**Important**: All text elements must use `fontFamily: 5` (Excalifont) for consistent visual appearance.
+**Important**:
+- All visible text must be represented by explicit `text` elements with `fontFamily: 5` (Excalifont).
+- Do **not** rely on `rectangle.text`, `ellipse.text`, or `diamond.text` for primary labels. Those inline text fields are legacy placeholders and may render inconsistently in the PNG export pipeline.
+- Preferred pattern: create the shape first, then add a separate `text` element bound via `containerId`/`boundElements`.
+
+### Stable Text Rendering Rule
+
+For diagrams that will be exported to PNG, use this rule everywhere:
+
+1. Shapes (`rectangle`, `ellipse`, `diamond`) are for outlines/backgrounds only — do **not** set `text` on shapes.
+2. Every title, node label, step label, and annotation should be a separate `text` element with `containerId` pointing to its parent shape.
+3. The parent shape must list the text element in its `boundElements` array.
+4. All templates (flowchart, relationship, mindmap) follow this pattern.
+
+Good (bound text — stays attached when container moves):
+
+```json
+[
+  {
+    "id": "box-1",
+    "type": "rectangle",
+    "x": 100,
+    "y": 100,
+    "width": 220,
+    "height": 100,
+    "boundElements": [{ "id": "box-1-text", "type": "text" }]
+  },
+  {
+    "id": "box-1-text",
+    "type": "text",
+    "x": 150,
+    "y": 132,
+    "width": 120,
+    "height": 40,
+    "containerId": "box-1",
+    "text": "核心执行引擎",
+    "fontSize": 20,
+    "fontFamily": 5,
+    "textAlign": "center",
+    "verticalAlign": "middle"
+  }
+]
+```
+
+Avoid:
+
+```json
+{
+  "id": "box-1",
+  "type": "rectangle",
+  "text": "核心执行引擎"
+}
+```
 
 ### Step 5: Format the Output
 
@@ -164,7 +215,8 @@ Structure the complete Excalidraw file:
    node <skill-path>/scripts/export-to-png.mjs <diagram>.excalidraw [output.png]
    ```
    This uses Excalidraw's native renderer via Playwright for pixel-perfect output. See the "PNG Export" section below for details and options.
-3. Inform user how to open/edit the source `.excalidraw` file:
+3. After export, verify that the PNG visibly contains all text labels. If labels are missing, the diagram is probably still relying on shape-inline text instead of standalone `text` elements.
+4. Inform user how to open/edit the source `.excalidraw` file:
    - Visit https://excalidraw.com
    - Click "Open" or drag-and-drop the file
    - Or use Excalidraw VS Code extension
