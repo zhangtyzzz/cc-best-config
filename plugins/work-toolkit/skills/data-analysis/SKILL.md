@@ -6,7 +6,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "python3 ${CLAUDE_SKILL_DIR}/scripts/ensure_python_env.py"
+          command: "_R=\"${CLAUDE_SKILL_DIR}\"; [ -z \"$_R\" ] && _R=\"$HOME/.claude/skills/data-analysis\"; python3 \"$_R/scripts/ensure_python_env.py\""
 ---
 
 # Data Analysis
