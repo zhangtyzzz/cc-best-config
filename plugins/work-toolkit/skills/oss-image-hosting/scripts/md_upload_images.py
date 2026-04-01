@@ -11,7 +11,7 @@
     OSS_ACCESS_KEY_ID      AK
     OSS_ACCESS_KEY_SECRET  SK
     OSS_ENDPOINT           如 https://oss-cn-hangzhou.aliyuncs.com
-    OSS_BUCKET             如 vchen-dev
+    OSS_BUCKET             如 my-bucket-name
 """
 
 from __future__ import annotations
@@ -22,9 +22,13 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
+from urllib.request import url2pathname
 
 import oss2
 from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
+
+from shared import SKILL_DIR, load_env_file
 
 
 OSS_PREFIX = "images/ephemeral"
@@ -45,8 +49,6 @@ MD_IMAGE_RE = re.compile(
     r"\)"                                     # closing paren
 )
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IGNORECASE)
-
-SKILL_DIR = Path(__file__).resolve().parent.parent
 
 # Pattern that matches fenced code blocks, indented code blocks, and inline
 # code spans as tokens.  Anything not matched is prose.
@@ -82,21 +84,6 @@ def _replace_outside_code(content: str, replacer) -> str:
     return "".join(parts)
 
 
-def load_env_file() -> None:
-    """Load .env file from skill directory into os.environ."""
-    env_file = SKILL_DIR / ".env"
-    if not env_file.exists():
-        return
-    for line in env_file.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" in line:
-            key, _, value = line.partition("=")
-            value = value.strip().strip("'\"")
-            os.environ.setdefault(key.strip(), value)
-
-
 def is_local_path(path: str) -> bool:
     return path.startswith("file://") or not path.startswith(("http://", "https://", "//", "data:"))
 
@@ -104,8 +91,6 @@ def is_local_path(path: str) -> bool:
 def _normalize_file_uri(path: str) -> str:
     """Convert file:// URIs to bare filesystem paths with proper URL decoding."""
     if path.startswith("file://"):
-        from urllib.parse import unquote
-        from urllib.request import url2pathname
         # url2pathname handles platform differences (e.g. /C:/... on Windows)
         return url2pathname(unquote(path[7:]))
     return path
@@ -341,8 +326,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="将 Markdown 中的本地图片上传到 OSS 并替换为签名 URL"
     )
-    parser.add_argument("--content", default="", help="Markdown 内容")
-    parser.add_argument("--content-file", default="", help="Markdown 文件路径")
+    parser.add_argument("--content", default=None, help="Markdown 内容")
+    parser.add_argument("--content-file", default=None, help="Markdown 文件路径")
     parser.add_argument(
         "--setup-lifecycle",
         action="store_true",
@@ -368,7 +353,7 @@ def main() -> None:
         content = p.read_text(encoding="utf-8")
         base_dir = p.resolve().parent
 
-    if not content and not args.content_file:
+    if not content and args.content is None and args.content_file is None:
         print("错误：需要 --content 或 --content-file", file=sys.stderr)
         sys.exit(1)
 

@@ -14,16 +14,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from shared import ENV_FILE, REQUIRED_ENV_VARS, SKILL_DIR, load_env_file
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-ENV_FILE = SKILL_DIR / ".env"
 ENV_EXAMPLE = SKILL_DIR / ".env.example"
-REQUIRED_ENV_VARS = [
-    "OSS_ACCESS_KEY_ID",
-    "OSS_ACCESS_KEY_SECRET",
-    "OSS_ENDPOINT",
-    "OSS_BUCKET",
-]
 
 
 def emit(decision: str, reason: str, context: str) -> None:
@@ -90,20 +83,6 @@ def install_oss2() -> bool:
         return False
 
 
-def load_env_file() -> None:
-    """Load .env file into os.environ (simple key=value parser)."""
-    if not ENV_FILE.exists():
-        return
-    for line in ENV_FILE.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" in line:
-            key, _, value = line.partition("=")
-            value = value.strip().strip("'\"")
-            os.environ.setdefault(key.strip(), value)
-
-
 def get_missing_env_vars() -> list[str]:
     return [v for v in REQUIRED_ENV_VARS if not os.environ.get(v)]
 
@@ -120,62 +99,9 @@ def get_python_exec() -> str:
 def check_lifecycle(python_exec: str) -> bool:
     """Run a quick lifecycle check via the oss2 library to verify access.
     Also verifies write access when no rules exist yet."""
-    check_code = """
-import os, sys
-MAX_DAYS = 1
-PREFIX = 'images/ephemeral'
-try:
-    import oss2
-    from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
-    auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
-    bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
-
-    # Step 1: Try to read lifecycle rules
-    rules = None
-    try:
-        existing = bucket.get_bucket_lifecycle()
-        rules = list(existing.rules)
-    except oss2.exceptions.NoSuchLifecycle:
-        rules = []
-    except oss2.exceptions.AccessDenied:
-        # Cannot read lifecycle — assume configured out of band.
-        # md_upload_images.py handles this identically (warn and proceed).
-        sys.exit(0)
-
-    # Step 2: Check if a suitable rule already covers our prefix
-    covered = False
-    for r in rules:
-        if r.status != LifecycleRule.ENABLED:
-            continue
-        if r.expiration is None:
-            continue
-        if r.expiration.days is None or r.expiration.days > MAX_DAYS:
-            continue
-        rp = (r.prefix or '').rstrip('/')
-        if PREFIX.startswith(rp):
-            covered = True
-            break
-    if covered:
-        sys.exit(0)
-
-    # Step 3: Not covered — try to create the rule (failure = not ready)
-    rule = LifecycleRule(
-        'auto-delete-ephemeral-images', PREFIX + '/',
-        status=LifecycleRule.ENABLED,
-        expiration=LifecycleExpiration(days=1),
-    )
-    rules = [r for r in rules if r.id != 'auto-delete-ephemeral-images']
-    rules.append(rule)
-    bucket.put_bucket_lifecycle(BucketLifecycle(rules))
-    sys.exit(0)
-except oss2.exceptions.OssError:
-    sys.exit(1)
-except Exception:
-    sys.exit(1)
-"""
     try:
         subprocess.check_call(
-            [python_exec, "-c", check_code],
+            [python_exec, str(SKILL_DIR / "scripts" / "check_lifecycle.py")],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             env=os.environ.copy(),
@@ -186,6 +112,18 @@ except Exception:
 
 
 def main() -> None:
+    # Fast-path: only run env checks when the Bash command is related to
+    # OSS / image upload.  The hook receives JSON on stdin with the tool input.
+    try:
+        hook_input = json.loads(sys.stdin.read())
+        command = hook_input.get("tool_input", {}).get("command", "")
+        if "md_upload_images" not in command and "oss" not in command.lower():
+            emit("allow", "Not an OSS-related command", "")
+            return
+    except Exception:
+        # If stdin is empty or not valid JSON, proceed with full check
+        pass
+
     issues: list[str] = []
 
     # Step 1: Check oss2
