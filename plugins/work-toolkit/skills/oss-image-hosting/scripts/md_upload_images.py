@@ -33,8 +33,8 @@ LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
-# title + closing paren. Supports spaces and balanced parentheses in filenames.
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(\s+"[^"]*")?\)')
+# title + closing paren. Supports spaces, balanced parens, and both quote styles.
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"\']+|\([^)]*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -111,16 +111,24 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
     )
 
 
-def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
-    """Ensure lifecycle rule exists. Returns True if verified, False if not.
-    Uploads should be blocked when lifecycle cannot be confirmed."""
+def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
+    """Check if any lifecycle rule covers the ephemeral prefix."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
-            if r.id == LIFECYCLE_RULE_ID:
+            if (r.prefix or "").rstrip("/").startswith(OSS_PREFIX):
                 return True
     except oss2.exceptions.NoSuchLifecycle:
         pass
+    return False
+
+
+def ensure_lifecycle(bucket: oss2.Bucket) -> bool:
+    """Ensure a lifecycle rule covers the ephemeral prefix. Returns True if
+    verified, False if not. Uploads should be blocked when unverified."""
+    try:
+        if _has_ephemeral_lifecycle(bucket):
+            return True
     except oss2.exceptions.OssError:
         print(
             "错误：无法读取生命周期规则（权限不足）。上传已取消以防止文件永久留存。\n"
