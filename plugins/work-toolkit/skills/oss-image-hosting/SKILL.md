@@ -13,7 +13,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "python3 \"${CLAUDE_SKILL_DIR}/scripts/ensure_oss_env.py\" || python \"${CLAUDE_SKILL_DIR}/scripts/ensure_oss_env.py\""
+          command: "_R=\"${CLAUDE_SKILL_DIR}\"; [ -z \"$_R\" ] && _R=\"$HOME/.claude/skills/oss-image-hosting\"; python3 \"$_R/scripts/ensure_oss_env.py\" || python \"$_R/scripts/ensure_oss_env.py\""
 ---
 
 # OSS Image Hosting

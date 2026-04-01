@@ -178,7 +178,7 @@ def main() -> None:
     if installed_oss2:
         context_parts.append(f"Auto-installed oss2 into {SKILL_DIR / '.venv'}.")
     context_parts.append(
-        f"Use `{python_exec} ${{CLAUDE_SKILL_DIR}}/scripts/md_upload_images.py` "
+        f"Use `{python_exec} {SKILL_DIR}/scripts/md_upload_images.py` "
         f"to process markdown images."
     )
 
