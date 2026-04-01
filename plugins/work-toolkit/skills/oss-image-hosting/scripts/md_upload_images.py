@@ -33,9 +33,17 @@ LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
-# title + closing paren. Supports spaces, apostrophes, and up to 2 levels of
-# nested parentheses in paths, plus both quote styles for titles.
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\((?:[^()"]+|\([^)]*\))*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
+# title + closing paren. Supports spaces, apostrophes in filenames (not after
+# whitespace, to avoid consuming titles), up to 2 levels of nested parens,
+# and both quote styles for titles.
+MD_IMAGE_RE = re.compile(
+    r"(!\[[^\]]*\]\()"                        # group(1): ![alt](
+    r"((?:[^()\"' \t]+|'(?!\s)|"              # group(2): path chars (apostrophe OK if not after space)
+    r" (?!['\"])|"                            #   space OK if not followed by quote (title start)
+    r"\((?:[^()\"]+|\([^)]*\))*\))+?)"        #   nested parens up to 2 levels
+    r"(\s+(?:\"[^\"]*\"|'[^']*'))?"           # group(3): optional title
+    r"\)"                                     # closing paren
+)
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
