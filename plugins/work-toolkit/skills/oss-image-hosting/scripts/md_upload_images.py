@@ -33,25 +33,27 @@ LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
 # Markdown image patterns — group(2) captures the path, group(3) captures optional
-# title + closing paren. Supports spaces, balanced parens, and both quote styles.
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"\']+|\([^)]*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
+# title + closing paren. Supports spaces, balanced parens, apostrophes in paths,
+# and both quote styles for titles.
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(\s+(?:"[^"]*"|\'[^\']*\'))?\)')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=["\'])([^"\']+)(["\'][^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
-# Patterns for stripping code regions before image scanning
-_FENCED_CODE_RE = re.compile(r'(^|\n)(```|~~~).*?\2\s*(\n|$)', re.DOTALL)
+# Patterns for stripping code regions before image scanning.
+# CommonMark allows fenced blocks indented up to 3 spaces and multi-backtick spans.
+_FENCED_CODE_RE = re.compile(r'(^|\n)[ ]{0,3}(`{3,}|~{3,}).*?\2\s*(\n|$)', re.DOTALL)
 _INDENTED_CODE_RE = re.compile(r'(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+')
-_INLINE_CODE_RE = re.compile(r'`[^`]+`')
+_INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
 
 # Pattern that matches fenced code blocks, indented code blocks, and inline
 # code spans as tokens.  Anything not matched is prose.
 # Uses (?s:...) inline flag for the fenced block alternative only, so that
 # `.+` in the indented alternative does NOT match newlines.
 _CODE_TOKEN_RE = re.compile(
-    r'((?s:(?:^|\n)(?:```|~~~).*?(?:```|~~~)\s*(?:\n|$))'
+    r'((?s:(?:^|\n)[ ]{0,3}(?:`{3,}|~{3,}).*?(?:`{3,}|~{3,})\s*(?:\n|$))'
     r'|(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+'
-    r'|`[^`]+`)',
+    r'|(?:`+)(?!`).+?(?:`+))',
 )
 
 
