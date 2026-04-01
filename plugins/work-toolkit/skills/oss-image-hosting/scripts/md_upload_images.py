@@ -32,9 +32,9 @@ SIGN_EXPIRY = 3600  # 1 hour
 LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
-# Markdown image patterns — group(2) captures the path, allowing spaces in filenames
-# and optional titles like ![alt](path "title")
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()(.+?)(\s*(?:"[^"]*")?\))')
+# Markdown image patterns — group(2) captures the path, supporting spaces,
+# balanced parentheses in filenames, and optional titles like ![alt](path "title")
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(?:\s+"[^"]*")?\)')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -51,7 +51,8 @@ def load_env_file() -> None:
             continue
         if "=" in line:
             key, _, value = line.partition("=")
-            os.environ.setdefault(key.strip(), value.strip())
+            value = value.strip().strip("'\"")
+            os.environ.setdefault(key.strip(), value)
 
 
 def is_local_path(path: str) -> bool:
@@ -195,14 +196,20 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
         print("警告：没有成功上传的图片。", file=sys.stderr)
         return content
 
-    def replace_path(m: re.Match) -> str:
+    def replace_md(m: re.Match) -> str:
+        path_str = m.group(2)
+        if path_str in url_map:
+            return m.group(1) + url_map[path_str] + ")"
+        return m.group(0)
+
+    def replace_html(m: re.Match) -> str:
         path_str = m.group(2)
         if path_str in url_map:
             return m.group(1) + url_map[path_str] + m.group(3)
         return m.group(0)
 
-    content = MD_IMAGE_RE.sub(replace_path, content)
-    content = HTML_IMG_RE.sub(replace_path, content)
+    content = MD_IMAGE_RE.sub(replace_md, content)
+    content = HTML_IMG_RE.sub(replace_html, content)
 
     print(f"✅ 已替换 {len(url_map)} 张图片链接。", file=sys.stderr)
     return content

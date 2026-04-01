@@ -84,7 +84,8 @@ def load_env_file() -> None:
             continue
         if "=" in line:
             key, _, value = line.partition("=")
-            os.environ.setdefault(key.strip(), value.strip())
+            value = value.strip().strip("'\"")
+            os.environ.setdefault(key.strip(), value)
 
 
 def get_missing_env_vars() -> list[str]:
