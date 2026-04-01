@@ -38,9 +38,14 @@ def emit(decision: str, reason: str, context: str) -> None:
     print(json.dumps(result))
 
 
+def _venv_subdir() -> str:
+    """Return the venv binary subdirectory name for the current platform."""
+    return "Scripts" if sys.platform == "win32" else "bin"
+
+
 def check_oss2() -> bool:
     """Check oss2 availability in venv first, then system python."""
-    venv_python = SKILL_DIR / ".venv" / "bin" / "python"
+    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / "python"
     python_exec = str(venv_python) if venv_python.exists() else sys.executable
     try:
         subprocess.check_call(
@@ -63,7 +68,7 @@ def install_oss2() -> bool:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-        pip = venv_dir / "bin" / "pip"
+        pip = venv_dir / _venv_subdir() / "pip"
         subprocess.check_call(
             [str(pip), "install", "--quiet", "oss2"],
             stdout=subprocess.DEVNULL,
@@ -94,7 +99,7 @@ def get_missing_env_vars() -> list[str]:
 
 def get_python_exec() -> str:
     """Return the venv python path if it exists, else system python3."""
-    venv_python = SKILL_DIR / ".venv" / "bin" / "python"
+    venv_python = SKILL_DIR / ".venv" / _venv_subdir() / "python"
     if venv_python.exists():
         return str(venv_python)
     return "python3"

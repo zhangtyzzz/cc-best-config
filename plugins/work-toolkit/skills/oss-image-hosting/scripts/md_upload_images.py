@@ -32,9 +32,9 @@ SIGN_EXPIRY = 3600  # 1 hour
 LIFECYCLE_RULE_ID = "auto-delete-ephemeral-images"
 LIFECYCLE_DAYS = 1  # OSS minimum granularity
 
-# Markdown image patterns — group(2) captures the path, supporting spaces,
-# balanced parentheses in filenames, and optional titles like ![alt](path "title")
-MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(?:\s+"[^"]*")?\)')
+# Markdown image patterns — group(2) captures the path, group(3) captures optional
+# title + closing paren. Supports spaces and balanced parentheses in filenames.
+MD_IMAGE_RE = re.compile(r'(!\[[^\]]*\]\()((?:[^()"]+|\([^)]*\))+?)(\s+"[^"]*")?\)')
 HTML_IMG_RE = re.compile(r'(<img\s[^>]*?src=")([^"]+)("[^>]*>)', re.IGNORECASE)
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -199,7 +199,8 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
     def replace_md(m: re.Match) -> str:
         path_str = m.group(2)
         if path_str in url_map:
-            return m.group(1) + url_map[path_str] + ")"
+            title = m.group(3) or ""
+            return m.group(1) + url_map[path_str] + title + ")"
         return m.group(0)
 
     def replace_html(m: re.Match) -> str:
