@@ -224,7 +224,8 @@ node convert-browser.mjs docs/architecture.md ./output-diagrams
 
 1. **Extracts** all ` ```mermaid ``` ` code blocks from the input Markdown
 2. **Converts** each block to Excalidraw elements via `parseMermaidToExcalidraw`
-3. **Cleans** HTML tags (`<br>`, `<br/>`) in labels, converting them to newlines
+3. **Cleans** HTML tags (`<br>`, `<br/>`) and literal `\n` strings in labels, converting them to real newlines
 4. **Transforms** intermediate format to standard Excalidraw elements via `convertToExcalidrawElements`
-5. **Exports** each diagram to PNG (2x scale) using Excalidraw's native `exportToBlob`
-6. **Saves** both `.excalidraw` JSON and `.png` files to the output directory
+5. **Applies** semantic color scheme — blue-indigo for nodes, amber for decisions, gray for containers (by area heuristic)
+6. **Exports** each diagram to PNG (2x scale) using Excalidraw's native `exportToBlob`
+7. **Saves** both `.excalidraw` JSON and `.png` files to the output directory

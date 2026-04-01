@@ -92,6 +92,9 @@ const html = `<!DOCTYPE html>
 </script>
 </body></html>`;
 
+// Heuristic: rectangles larger than this are treated as subgraph containers
+const AREA_THRESHOLD = 50000;
+
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage();
@@ -122,7 +125,6 @@ try {
 
     // Post-process: inject semantic color scheme based on element role
     // Uses Excalidraw Open Colors palette for native compatibility
-    const AREA_THRESHOLD = 50000; // containers (subgraphs) vs leaf nodes
     const styledElements = convertResult.elements.map((el) => {
       if (el.type === "rectangle" || el.type === "ellipse") {
         const area = (el.width || 0) * (el.height || 0);
