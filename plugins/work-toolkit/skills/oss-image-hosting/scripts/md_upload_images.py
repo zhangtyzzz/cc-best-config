@@ -109,6 +109,18 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
     )
 
 
+def ensure_lifecycle(bucket: oss2.Bucket) -> None:
+    """Ensure lifecycle rule exists; create it if missing."""
+    try:
+        existing = bucket.get_bucket_lifecycle()
+        for r in existing.rules:
+            if r.id == LIFECYCLE_RULE_ID:
+                return  # already configured
+    except oss2.exceptions.NoSuchLifecycle:
+        pass
+    setup_lifecycle(bucket)
+
+
 def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:
     if not local_path.exists():
         print(f"警告：文件不存在，跳过: {local_path}", file=sys.stderr)
@@ -153,6 +165,7 @@ def process_markdown(content: str, base_dir: Path | None) -> str:
     print(f"发现 {len(local_images)} 张本地图片，开始上传...", file=sys.stderr)
 
     bucket = create_bucket()
+    ensure_lifecycle(bucket)
     url_map: dict[str, str] = {}
 
     for raw_path, resolved_path in local_images.items():

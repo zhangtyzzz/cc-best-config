@@ -39,10 +39,17 @@ def emit(decision: str, reason: str, context: str) -> None:
 
 
 def check_oss2() -> bool:
+    """Check oss2 availability in venv first, then system python."""
+    venv_python = SKILL_DIR / ".venv" / "bin" / "python"
+    python_exec = str(venv_python) if venv_python.exists() else sys.executable
     try:
-        import oss2  # noqa: F401
+        subprocess.check_call(
+            [python_exec, "-c", "import oss2"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         return True
-    except ImportError:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
 
