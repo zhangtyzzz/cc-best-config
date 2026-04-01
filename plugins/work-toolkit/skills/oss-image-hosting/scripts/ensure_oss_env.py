@@ -122,20 +122,23 @@ def check_lifecycle(python_exec: str) -> bool:
     Also verifies write access when no rules exist yet."""
     check_code = """
 import os, sys
+MAX_DAYS = 7
+PREFIX = 'images/ephemeral'
 try:
     import oss2
     from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
-    PREFIX = 'images/ephemeral'
     auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
     bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
     try:
         existing = bucket.get_bucket_lifecycle()
-        # Check if any enabled rule with expiration covers our prefix
+        # Check if any enabled rule with short expiration covers our prefix
         covered = False
         for r in existing.rules:
             if r.status != LifecycleRule.ENABLED:
                 continue
             if r.expiration is None:
+                continue
+            if r.expiration.days is not None and r.expiration.days > MAX_DAYS:
                 continue
             rp = (r.prefix or '').rstrip('/')
             if PREFIX.startswith(rp):
@@ -154,7 +157,7 @@ try:
         bucket.put_bucket_lifecycle(BucketLifecycle(rules))
         sys.exit(0)
     except oss2.exceptions.NoSuchLifecycle:
-        # No rules yet — verify we can create one
+        # No rules yet — try to create one
         rule = LifecycleRule(
             'auto-delete-ephemeral-images', PREFIX + '/',
             status=LifecycleRule.ENABLED,
@@ -162,11 +165,13 @@ try:
         )
         bucket.put_bucket_lifecycle(BucketLifecycle([rule]))
         sys.exit(0)
-    except oss2.exceptions.OssError:
-        # Cannot read/write lifecycle — assume configured out of band.
-        # Least-privilege credentials (upload-only) are valid; md_upload_images.py
-        # handles this case the same way.
-        sys.exit(0)
+except oss2.exceptions.AccessDeniedError:
+    # Cannot read lifecycle at all — assume configured out of band.
+    # md_upload_images.py handles this identically (warn and proceed).
+    sys.exit(0)
+except oss2.exceptions.OssError:
+    # Can read but failed to write — lifecycle is missing and we can't fix it
+    sys.exit(1)
 except Exception:
     sys.exit(1)
 """
