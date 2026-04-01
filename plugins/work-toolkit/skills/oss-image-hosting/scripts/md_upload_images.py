@@ -110,7 +110,8 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
 
 
 def ensure_lifecycle(bucket: oss2.Bucket) -> None:
-    """Ensure lifecycle rule exists; create it if missing."""
+    """Ensure lifecycle rule exists; create it if missing. Best-effort — skip
+    silently when credentials lack bucket-level lifecycle permissions."""
     try:
         existing = bucket.get_bucket_lifecycle()
         for r in existing.rules:
@@ -118,7 +119,13 @@ def ensure_lifecycle(bucket: oss2.Bucket) -> None:
                 return  # already configured
     except oss2.exceptions.NoSuchLifecycle:
         pass
-    setup_lifecycle(bucket)
+    except oss2.exceptions.OssError:
+        # Insufficient permissions for lifecycle API — skip gracefully
+        return
+    try:
+        setup_lifecycle(bucket)
+    except oss2.exceptions.OssError as e:
+        print(f"⚠️ 无法设置生命周期规则（权限不足?）: {e}", file=sys.stderr)
 
 
 def upload_and_sign(bucket: oss2.Bucket, local_path: Path) -> str | None:

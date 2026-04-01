@@ -32,17 +32,17 @@ hooks:
 
 ## 使用方式
 
-脚本位于 `scripts/md_upload_images.py`（相对于本 skill 目录）。
+脚本位于 `scripts/md_upload_images.py`（相对于本 skill 目录）。PreToolUse hook 会自动检测环境并返回正确的 Python 解释器路径，请使用 hook 上下文中给出的命令。
 
 ```bash
 # 处理 markdown 文件，输出替换后内容到 stdout
-python3 ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content-file report.md
+${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content-file report.md
 
 # 直接传入 markdown 文本
-python3 ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content "![图](./chart.png)"
+${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content "![图](./chart.png)"
 
 # 一次性设置 OSS 生命周期规则（首次使用时自动执行，也可手动运行）
-python3 ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --setup-lifecycle
+${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --setup-lifecycle
 ```
 
 ## 与其他 skill 配合
@@ -51,7 +51,7 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --setup-lifecycle
 
 ```bash
 # 先处理图片，再写入钉钉文档
-processed=$(python3 ${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content-file report.md)
+processed=$(${CLAUDE_SKILL_DIR}/scripts/md_upload_images.py --content-file report.md)
 python3 doc_create_and_write.py --name "周报" --content "$processed"
 ```
 
