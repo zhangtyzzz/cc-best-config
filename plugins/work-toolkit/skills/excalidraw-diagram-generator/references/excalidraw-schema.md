@@ -67,13 +67,10 @@ interface BaseElement {
 interface RectangleElement extends BaseElement {
   type: "rectangle";
   roundness: { type: 3 };      // 3 = rounded corners
-  text?: string;               // Legacy inline text support only; avoid for PNG export
-  fontSize?: number;           // Font size (16-32 typical)
-  fontFamily?: number;         // Legacy values exist, but prefer explicit text elements with 5 = Excalifont
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
+
+> Shapes no longer carry text fields. Use a separate `text` element with `containerId` instead (see [Recommended Labeling Strategy](#recommended-labeling-strategy)).
 
 **Example (rectangle + bound text element):**
 ```json
@@ -112,11 +109,6 @@ interface RectangleElement extends BaseElement {
 ```typescript
 interface EllipseElement extends BaseElement {
   type: "ellipse";
-  text?: string;               // Legacy inline text support only; avoid for PNG export
-  fontSize?: number;
-  fontFamily?: number;
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
 
@@ -125,11 +117,6 @@ interface EllipseElement extends BaseElement {
 ```typescript
 interface DiamondElement extends BaseElement {
   type: "diamond";
-  text?: string;               // Legacy inline text support only; avoid for PNG export
-  fontSize?: number;
-  fontFamily?: number;
-  textAlign?: "left" | "center" | "right";
-  verticalAlign?: "top" | "middle" | "bottom";
 }
 ```
 
@@ -207,7 +194,7 @@ interface TextElement extends BaseElement {
   "height": 25,
   "text": "Hello World",
   "fontSize": 20,
-  "fontFamily": 1,
+  "fontFamily": 5,
   "textAlign": "left",
   "verticalAlign": "top",
   "roundness": null
@@ -303,9 +290,10 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
 
 | ID | Name | Description |
 |----|------|-------------|
-| 1 | Virgil | Hand-drawn style (default) |
+| 1 | Virgil | Hand-drawn style |
 | 2 | Helvetica | Clean sans-serif |
 | 3 | Cascadia | Monospace |
+| 5 | Excalifont | Recommended default for stable exports |
 
 ## Validation Rules
 
@@ -353,13 +341,42 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
       "version": 1,
       "versionNonce": 987654321,
       "isDeleted": false,
+      "boundElements": [{ "id": "box1-text", "type": "text" }],
+      "updated": 1706659200000,
+      "link": null,
+      "locked": false
+    },
+    {
+      "id": "box1-text",
+      "type": "text",
+      "x": 160,
+      "y": 138,
+      "width": 80,
+      "height": 24,
+      "containerId": "box1",
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a0G",
+      "roundness": null,
+      "seed": 1234567891,
+      "version": 1,
+      "versionNonce": 987654322,
+      "isDeleted": false,
       "boundElements": null,
       "updated": 1706659200000,
       "link": null,
       "locked": false,
       "text": "Hello",
       "fontSize": 20,
-      "fontFamily": 1,
+      "fontFamily": 5,
       "textAlign": "center",
       "verticalAlign": "middle"
     }
