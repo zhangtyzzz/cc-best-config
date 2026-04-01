@@ -52,6 +52,8 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 # code spans as tokens.  Anything not matched is prose.
 # Closing fences are anchored to line starts (up to 3 leading spaces) so
 # embedded fence tokens like print("```") don't terminate the block early.
+# Indented code blocks: 4+ spaces after blank line (top-level) or 8+ spaces
+# after blank line (nested under list items — list marker uses ~4 chars).
 # Inline code uses backreference \5 to match the same backtick run length.
 _CODE_TOKEN_RE = re.compile(
     r'((?:^|\n)[ ]{0,3}(`{3,})[^\n]*\n(?:.*?\n)?[ ]{0,3}\2[^\S\n]*(?:\n|$))'
