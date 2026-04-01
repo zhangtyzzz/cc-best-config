@@ -191,3 +191,40 @@ python add-arrow.py diagram.excalidraw 300 200 500 300
 2. **(Optional)** Adds a label near the arrow midpoint
 3. **Appends** elements to the diagram
 4. **Saves** the updated file
+
+---
+
+## convert-browser.mjs
+
+Batch-converts Mermaid code blocks in a Markdown file to Excalidraw JSON + PNG images.
+Uses Playwright to run `@excalidraw/mermaid-to-excalidraw` and `@excalidraw/excalidraw` in a browser context.
+
+### Prerequisites
+
+- Node.js 18+
+- Playwright with Chromium (`npx playwright install chromium`)
+- Dependencies installed (`npm install` in this directory)
+
+### Usage
+
+```bash
+node convert-browser.mjs <input.md> <output-dir>
+```
+
+### Examples
+
+```bash
+# Convert all mermaid blocks in a markdown file to PNG
+node convert-browser.mjs docs/architecture.md ./output-diagrams
+
+# Output files: mermaid-01.excalidraw, mermaid-01.png, mermaid-02.excalidraw, ...
+```
+
+### What the Script Does
+
+1. **Extracts** all ` ```mermaid ``` ` code blocks from the input Markdown
+2. **Converts** each block to Excalidraw elements via `parseMermaidToExcalidraw`
+3. **Cleans** HTML tags (`<br>`, `<br/>`) in labels, converting them to newlines
+4. **Transforms** intermediate format to standard Excalidraw elements via `convertToExcalidrawElements`
+5. **Exports** each diagram to PNG (2x scale) using Excalidraw's native `exportToBlob`
+6. **Saves** both `.excalidraw` JSON and `.png` files to the output directory
