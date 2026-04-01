@@ -110,9 +110,10 @@ def is_local_path(path: str) -> bool:
 def _normalize_file_uri(path: str) -> str:
     """Convert file:// URIs to bare filesystem paths with proper URL decoding."""
     if path.startswith("file://"):
-        from urllib.parse import unquote, urlparse
-        parsed = urlparse(path)
-        return unquote(parsed.path)
+        from urllib.parse import unquote
+        from urllib.request import url2pathname
+        # url2pathname handles platform differences (e.g. /C:/... on Windows)
+        return url2pathname(unquote(path[7:]))
     return path
 
 
