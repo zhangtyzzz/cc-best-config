@@ -43,33 +43,28 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 # Patterns for stripping code regions before image scanning.
 # CommonMark allows fenced blocks indented up to 3 spaces and multi-backtick spans.
 _FENCED_CODE_RE = re.compile(r'(^|\n)[ ]{0,3}(`{3,}|~{3,}).*?\2\s*(\n|$)', re.DOTALL)
-_INDENTED_CODE_RE = re.compile(r'(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+')
 _INLINE_CODE_RE = re.compile(r'(`+)(?!`).+?\1')
 
-# Pattern that matches fenced code blocks, indented code blocks, and inline
-# code spans as tokens.  Anything not matched is prose.
-# Uses (?s:...) inline flag for the fenced block alternative only, so that
-# `.+` in the indented alternative does NOT match newlines.
+# Pattern that matches fenced code blocks and inline code spans as tokens.
+# Anything not matched is prose.
+# Uses (?s:...) inline flag for the fenced block alternative only.
 _CODE_TOKEN_RE = re.compile(
     r'((?s:(?:^|\n)[ ]{0,3}(?:`{3,}|~{3,}).*?(?:`{3,}|~{3,})\s*(?:\n|$))'
-    r'|(?:(?:^|\n)(?:[ ]{4}|\t)[^\n]+)+'
     r'|(?:`+)(?!`).+?(?:`+))',
 )
 
 
 def _strip_code_regions(text: str) -> str:
-    """Remove fenced code blocks, indented code blocks, and inline code spans
-    so image regexes don't match illustrative examples inside code."""
+    """Remove fenced code blocks and inline code spans so image regexes
+    don't match illustrative examples inside code."""
     text = _FENCED_CODE_RE.sub('', text)
-    text = _INDENTED_CODE_RE.sub('', text)
     return _INLINE_CODE_RE.sub('', text)
 
 
 def _replace_outside_code(content: str, replacer) -> str:
     """Apply *replacer(segment)* only to parts of *content* that are outside
-    fenced code blocks, indented code blocks, and inline code spans.  Code
-    tokens are preserved verbatim so image-like examples inside code are never
-    rewritten."""
+    fenced code blocks and inline code spans.  Code tokens are preserved
+    verbatim so image-like examples inside code are never rewritten."""
     parts: list[str] = []
     last_end = 0
     for m in _CODE_TOKEN_RE.finditer(content):

@@ -129,48 +129,46 @@ try:
     from oss2.models import BucketLifecycle, LifecycleExpiration, LifecycleRule
     auth = oss2.Auth(os.environ['OSS_ACCESS_KEY_ID'], os.environ['OSS_ACCESS_KEY_SECRET'])
     bucket = oss2.Bucket(auth, os.environ['OSS_ENDPOINT'], os.environ['OSS_BUCKET'])
+
+    # Step 1: Try to read lifecycle rules
+    rules = None
     try:
         existing = bucket.get_bucket_lifecycle()
-        # Check if any enabled rule with short expiration covers our prefix
-        covered = False
-        for r in existing.rules:
-            if r.status != LifecycleRule.ENABLED:
-                continue
-            if r.expiration is None:
-                continue
-            if r.expiration.days is not None and r.expiration.days > MAX_DAYS:
-                continue
-            rp = (r.prefix or '').rstrip('/')
-            if PREFIX.startswith(rp):
-                covered = True
-                break
-        if covered:
-            sys.exit(0)
-        # Not covered — try to create the rule
         rules = list(existing.rules)
-        rule = LifecycleRule(
-            'auto-delete-ephemeral-images', PREFIX + '/',
-            status=LifecycleRule.ENABLED,
-            expiration=LifecycleExpiration(days=1),
-        )
-        rules.append(rule)
-        bucket.put_bucket_lifecycle(BucketLifecycle(rules))
-        sys.exit(0)
     except oss2.exceptions.NoSuchLifecycle:
-        # No rules yet — try to create one
-        rule = LifecycleRule(
-            'auto-delete-ephemeral-images', PREFIX + '/',
-            status=LifecycleRule.ENABLED,
-            expiration=LifecycleExpiration(days=1),
-        )
-        bucket.put_bucket_lifecycle(BucketLifecycle([rule]))
+        rules = []
+    except oss2.exceptions.OssError:
+        # Cannot read lifecycle — assume configured out of band.
+        # md_upload_images.py handles this identically (warn and proceed).
         sys.exit(0)
-except oss2.exceptions.AccessDeniedError:
-    # Cannot read lifecycle at all — assume configured out of band.
-    # md_upload_images.py handles this identically (warn and proceed).
+
+    # Step 2: Check if a suitable rule already covers our prefix
+    covered = False
+    for r in rules:
+        if r.status != LifecycleRule.ENABLED:
+            continue
+        if r.expiration is None:
+            continue
+        if r.expiration.days is not None and r.expiration.days > MAX_DAYS:
+            continue
+        rp = (r.prefix or '').rstrip('/')
+        if PREFIX.startswith(rp):
+            covered = True
+            break
+    if covered:
+        sys.exit(0)
+
+    # Step 3: Not covered — try to create the rule (failure = not ready)
+    rule = LifecycleRule(
+        'auto-delete-ephemeral-images', PREFIX + '/',
+        status=LifecycleRule.ENABLED,
+        expiration=LifecycleExpiration(days=1),
+    )
+    rules = [r for r in rules if r.id != 'auto-delete-ephemeral-images']
+    rules.append(rule)
+    bucket.put_bucket_lifecycle(BucketLifecycle(rules))
     sys.exit(0)
 except oss2.exceptions.OssError:
-    # Can read but failed to write — lifecycle is missing and we can't fix it
     sys.exit(1)
 except Exception:
     sys.exit(1)
