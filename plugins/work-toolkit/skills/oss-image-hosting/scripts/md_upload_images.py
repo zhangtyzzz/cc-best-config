@@ -150,7 +150,7 @@ def setup_lifecycle(bucket: oss2.Bucket) -> None:
     )
 
 
-LIFECYCLE_MAX_DAYS = 7  # reject broader rules with very long TTL
+LIFECYCLE_MAX_DAYS = LIFECYCLE_DAYS  # only accept rules matching our retention
 
 
 def _has_ephemeral_lifecycle(bucket: oss2.Bucket) -> bool:
@@ -341,9 +341,14 @@ def main() -> None:
         content = p.read_text(encoding="utf-8")
         base_dir = p.resolve().parent
 
-    if not content:
+    if not content and not args.content_file:
         print("错误：需要 --content 或 --content-file", file=sys.stderr)
         sys.exit(1)
+
+    if not content:
+        # Empty file — pass through unchanged
+        sys.stdout.write("")
+        return
 
     result = process_markdown(content, base_dir)
     sys.stdout.write(result)

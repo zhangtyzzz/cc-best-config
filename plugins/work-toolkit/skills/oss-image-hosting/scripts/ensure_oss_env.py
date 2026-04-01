@@ -122,7 +122,7 @@ def check_lifecycle(python_exec: str) -> bool:
     Also verifies write access when no rules exist yet."""
     check_code = """
 import os, sys
-MAX_DAYS = 7
+MAX_DAYS = 1
 PREFIX = 'images/ephemeral'
 try:
     import oss2
