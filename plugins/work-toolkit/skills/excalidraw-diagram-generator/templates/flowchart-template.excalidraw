@@ -65,7 +65,7 @@
       "fontSize": 20,
       "fontFamily": 5,
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle"
     },
     {
       "id": "arrow1",
@@ -160,7 +160,7 @@
       "fontSize": 20,
       "fontFamily": 5,
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle"
     },
     {
       "id": "arrow2",
@@ -255,7 +255,7 @@
       "fontSize": 20,
       "fontFamily": 5,
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle"
     }
   ],
   "appState": {

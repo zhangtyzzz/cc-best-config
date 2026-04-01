@@ -65,7 +65,7 @@
       "fontSize": 20,
       "fontFamily": 5,
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle"
     },
     {
       "id": "entity2-box",
@@ -129,7 +129,7 @@
       "fontSize": 20,
       "fontFamily": 5,
       "textAlign": "center",
-      "verticalAlign": "top"
+      "verticalAlign": "middle"
     },
     {
       "id": "relationship-arrow",
