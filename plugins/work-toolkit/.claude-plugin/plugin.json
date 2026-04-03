@@ -16,6 +16,5 @@
     "productivity"
   ],
   "skills": ["./skills/"],
-  "commands": ["./commands/"],
-  "rules": ["./rules/"]
+  "commands": ["./commands/"]
 }
