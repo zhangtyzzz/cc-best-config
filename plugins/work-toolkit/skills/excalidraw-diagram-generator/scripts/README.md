@@ -164,7 +164,7 @@ python add-arrow.py <diagram-path> <from-x> <from-y> <to-x> <to-y> [OPTIONS]
 
 **Options**
 - `--style {solid|dashed|dotted}` : Line style (default: `solid`)
-- `--color HEX` : Arrow color (default: `#1e1e1e`)
+- `--color HEX` : Arrow color (default: `#615d59`)
 - `--label TEXT` : Add a text label on the arrow
 -- `--use-edit-suffix` : Edit via `.excalidraw.edit` to avoid editor overwrite issues (enabled by default; pass `--no-use-edit-suffix` to disable)
 

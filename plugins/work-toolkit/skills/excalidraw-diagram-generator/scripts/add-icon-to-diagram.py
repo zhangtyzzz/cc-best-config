@@ -233,12 +233,12 @@ def create_text_label(text: str, x: float, y: float) -> Dict[str, Any]:
         "width": len(text) * 10,  # Approximate width
         "height": 20,
         "angle": 0,
-        "strokeColor": "#1e1e1e",
+        "strokeColor": "#31302e",
         "backgroundColor": "transparent",
         "fillStyle": "solid",
         "strokeWidth": 2,
         "strokeStyle": "solid",
-        "roughness": 1,
+        "roughness": 0,
         "opacity": 100,
         "groupIds": [],
         "frameId": None,
@@ -254,7 +254,7 @@ def create_text_label(text: str, x: float, y: float) -> Dict[str, Any]:
         "locked": False,
         "text": text,
         "fontSize": 16,
-        "fontFamily": 5,  # Excalifont
+        "fontFamily": 2,  # Helvetica
         "textAlign": "center",
         "verticalAlign": "top",
         "containerId": None,

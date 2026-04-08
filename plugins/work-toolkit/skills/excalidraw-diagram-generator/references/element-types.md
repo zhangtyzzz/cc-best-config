@@ -36,10 +36,10 @@ Detailed specifications for each Excalidraw element type with visual examples an
 
 | Scenario | Configuration |
 |----------|---------------|
-| **Process step** | Green background (`#b2f2bb`), centered text |
-| **Entity/Object** | Blue background (`#a5d8ff`), medium size |
-| **System component** | Light color, descriptive text |
-| **Data store** | Gray/white, database-like label |
+| **Process step** | Soft blue background (`#e7f0ff`), blue stroke (`#0075de`) |
+| **Entity/Object** | Soft blue background (`#e7f0ff`), blue stroke (`#0075de`) |
+| **System component** | Soft teal (`#e0f5ea`), teal stroke (`#2a9d99`) |
+| **Data store** | Soft teal (`#e0f5ea`), teal stroke (`#2a9d99`) |
 
 ### Size Guidelines
 
@@ -58,7 +58,7 @@ Detailed specifications for each Excalidraw element type with visual examples an
   "y": 100,
   "width": 200,
   "height": 80,
-  "backgroundColor": "#b2f2bb",
+  "backgroundColor": "#e7f0ff",
   "text": "Validate Input",
   "fontSize": 20,
   "textAlign": "center",
@@ -89,8 +89,8 @@ Detailed specifications for each Excalidraw element type with visual examples an
 
 | Scenario | Configuration |
 |----------|---------------|
-| **Flow start** | Light green, "Start" text |
-| **Flow end** | Light red, "End" text |
+| **Flow start** | Soft teal (`#e0f5ea`), "Start" text |
+| **Flow end** | Soft pink (`#ffe6f0`), "End" text |
 | **State** | Soft color, state name |
 | **Highlight** | Bright color, emphasis text |
 
@@ -113,7 +113,7 @@ For circular shapes, use `width === height`:
   "y": 100,
   "width": 120,
   "height": 120,
-  "backgroundColor": "#d0f0c0",
+  "backgroundColor": "#e0f5ea",
   "text": "Start",
   "fontSize": 18,
   "textAlign": "center",
@@ -166,7 +166,7 @@ Diamonds need more space than rectangles for the same text:
   "y": 100,
   "width": 150,
   "height": 150,
-  "backgroundColor": "#ffe4a3",
+  "backgroundColor": "#fff2e0",
   "text": "Valid?",
   "fontSize": 18,
   "textAlign": "center",
@@ -315,7 +315,7 @@ Use separate text elements positioned near arrow midpoint:
   type: "text",
   text: "Label text",
   fontSize: 20,
-  fontFamily: 1,        // 1=Virgil, 2=Helvetica, 3=Cascadia
+  fontFamily: 2,        // 1=Virgil, 2=Helvetica (default), 3=Cascadia
   textAlign: "left",
   verticalAlign: "top"
 }
@@ -381,7 +381,7 @@ const height = fontSize * 1.2 * lines;
   "height": 20,
   "text": "User input",
   "fontSize": 14,
-  "fontFamily": 1,
+  "fontFamily": 2,
   "textAlign": "left",
   "verticalAlign": "top"
 }

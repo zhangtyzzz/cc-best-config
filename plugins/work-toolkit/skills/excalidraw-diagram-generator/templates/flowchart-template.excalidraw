@@ -11,23 +11,28 @@
       "width": 200,
       "height": 80,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#b2f2bb",
+      "strokeColor": "#0075de",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a0",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 1234567890,
       "version": 1,
       "versionNonce": 987654321,
       "isDeleted": false,
       "boundElements": [
-        { "id": "step1-text", "type": "text" }
+        {
+          "id": "step1-text",
+          "type": "text"
+        }
       ],
       "updated": 1706659200000,
       "link": null,
@@ -42,12 +47,12 @@
       "height": 24,
       "containerId": "step1-box",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -63,7 +68,7 @@
       "locked": false,
       "text": "Step 1",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     },
@@ -75,17 +80,19 @@
       "width": 0,
       "height": 100,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#615d59",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a2",
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 1234567892,
       "version": 1,
       "versionNonce": 987654323,
@@ -94,7 +101,16 @@
       "updated": 1706659200000,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [0, 100]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          100
+        ]
+      ],
       "startBinding": null,
       "endBinding": null
     },
@@ -106,23 +122,28 @@
       "width": 200,
       "height": 80,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#b2f2bb",
+      "strokeColor": "#0075de",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a3",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 1234567893,
       "version": 1,
       "versionNonce": 987654324,
       "isDeleted": false,
       "boundElements": [
-        { "id": "step2-text", "type": "text" }
+        {
+          "id": "step2-text",
+          "type": "text"
+        }
       ],
       "updated": 1706659200000,
       "link": null,
@@ -137,12 +158,12 @@
       "height": 24,
       "containerId": "step2-box",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -158,7 +179,7 @@
       "locked": false,
       "text": "Step 2",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     },
@@ -170,17 +191,19 @@
       "width": 0,
       "height": 100,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#615d59",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a5",
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 1234567895,
       "version": 1,
       "versionNonce": 987654326,
@@ -189,7 +212,16 @@
       "updated": 1706659200000,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [0, 100]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          100
+        ]
+      ],
       "startBinding": null,
       "endBinding": null
     },
@@ -201,23 +233,28 @@
       "width": 200,
       "height": 80,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#b2f2bb",
+      "strokeColor": "#0075de",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a6",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 1234567896,
       "version": 1,
       "versionNonce": 987654327,
       "isDeleted": false,
       "boundElements": [
-        { "id": "step3-text", "type": "text" }
+        {
+          "id": "step3-text",
+          "type": "text"
+        }
       ],
       "updated": 1706659200000,
       "link": null,
@@ -232,12 +269,12 @@
       "height": 24,
       "containerId": "step3-box",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -253,7 +290,7 @@
       "locked": false,
       "text": "Step 3",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     }
