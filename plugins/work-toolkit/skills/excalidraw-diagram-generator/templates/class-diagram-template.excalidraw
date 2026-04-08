@@ -454,8 +454,8 @@
       "lineHeight": 1.4285714285714286
     },
     {
-      "id": "inheritance-line",
-      "type": "line",
+      "id": "inheritance-arrow",
+      "type": "arrow",
       "x": 400,
       "y": 190,
       "width": 100,
@@ -471,13 +471,15 @@
       "groupIds": [],
       "frameId": null,
       "index": "aC",
-      "roundness": null,
+      "roundness": {
+        "type": 2
+      },
       "seed": 3001001013,
-      "version": 18,
-      "versionNonce": 1139021225,
+      "version": 1,
+      "versionNonce": 4002002013,
       "isDeleted": false,
-      "boundElements": [],
-      "updated": 1769755989350,
+      "boundElements": null,
+      "updated": 1706659200000,
       "link": null,
       "locked": false,
       "points": [
@@ -494,58 +496,7 @@
       "endBinding": null,
       "lastCommittedPoint": null,
       "startArrowhead": null,
-      "endArrowhead": null
-    },
-    {
-      "id": "inheritance-triangle",
-      "type": "line",
-      "x": 314.1999816894531,
-      "y": 181.5,
-      "width": 15,
-      "height": 15,
-      "angle": 0,
-      "strokeColor": "#615d59",
-      "backgroundColor": "#ffffff",
-      "fillStyle": "solid",
-      "strokeWidth": 2,
-      "strokeStyle": "solid",
-      "roughness": 0,
-      "opacity": 100,
-      "groupIds": [],
-      "frameId": null,
-      "index": "aD",
-      "roundness": null,
-      "seed": 3001001014,
-      "version": 21,
-      "versionNonce": 1468657767,
-      "isDeleted": false,
-      "boundElements": [],
-      "updated": 1769756005117,
-      "link": null,
-      "locked": false,
-      "points": [
-        [
-          0,
-          0
-        ],
-        [
-          -15,
-          15
-        ],
-        [
-          0,
-          15
-        ],
-        [
-          0,
-          0
-        ]
-      ],
-      "startBinding": null,
-      "endBinding": null,
-      "lastCommittedPoint": null,
-      "startArrowhead": null,
-      "endArrowhead": null
+      "endArrowhead": "triangle"
     }
   ],
   "appState": {
