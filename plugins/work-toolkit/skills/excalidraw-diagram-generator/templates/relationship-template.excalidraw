@@ -11,23 +11,28 @@
       "width": 180,
       "height": 100,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#a5d8ff",
+      "strokeColor": "#0075de",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a0",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 1111111111,
       "version": 1,
       "versionNonce": 2222222222,
       "isDeleted": false,
       "boundElements": [
-        { "id": "entity1-text", "type": "text" }
+        {
+          "id": "entity1-text",
+          "type": "text"
+        }
       ],
       "updated": 1706659200000,
       "link": null,
@@ -42,12 +47,12 @@
       "height": 24,
       "containerId": "entity1-box",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -63,7 +68,7 @@
       "locked": false,
       "text": "Entity A",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     },
@@ -75,23 +80,28 @@
       "width": 180,
       "height": 100,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#a5d8ff",
+      "strokeColor": "#0075de",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a2",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 1111111113,
       "version": 1,
       "versionNonce": 2222222224,
       "isDeleted": false,
       "boundElements": [
-        { "id": "entity2-text", "type": "text" }
+        {
+          "id": "entity2-text",
+          "type": "text"
+        }
       ],
       "updated": 1706659200000,
       "link": null,
@@ -106,12 +116,12 @@
       "height": 24,
       "containerId": "entity2-box",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -127,7 +137,7 @@
       "locked": false,
       "text": "Entity B",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     },
@@ -139,17 +149,19 @@
       "width": 120,
       "height": 0,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#615d59",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "index": "a4",
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 1111111115,
       "version": 1,
       "versionNonce": 2222222226,
@@ -158,7 +170,16 @@
       "updated": 1706659200000,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [120, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          120,
+          0
+        ]
+      ],
       "startBinding": null,
       "endBinding": null
     },
@@ -170,12 +191,12 @@
       "width": 80,
       "height": 20,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -191,7 +212,7 @@
       "locked": false,
       "text": "relates to",
       "fontSize": 16,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "left",
       "verticalAlign": "top"
     }

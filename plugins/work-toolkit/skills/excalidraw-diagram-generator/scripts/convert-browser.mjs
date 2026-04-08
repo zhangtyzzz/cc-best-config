@@ -132,19 +132,19 @@ try {
           // Container / subgraph — recede into background
           return {
             ...el,
-            strokeColor: "#adb5bd",
-            backgroundColor: "#f1f3f5",
+            strokeColor: "#a39e98",
+            backgroundColor: "#f6f5f4",
             fillStyle: "solid",
             strokeWidth: 1,
             roughness: 0,
             roundness: { type: 3 },
           };
         }
-        // Regular node — primary blue-indigo
+        // Regular node — Notion blue
         return {
           ...el,
-          strokeColor: "#4263eb",
-          backgroundColor: "#dbe4ff",
+          strokeColor: "#0075de",
+          backgroundColor: "#e7f0ff",
           fillStyle: "solid",
           strokeWidth: 1,
           roughness: 0,
@@ -152,11 +152,11 @@ try {
         };
       }
       if (el.type === "diamond") {
-        // Decision node — warm amber/orange
+        // Decision node — warm orange
         return {
           ...el,
-          strokeColor: "#e8590c",
-          backgroundColor: "#fff3bf",
+          strokeColor: "#dd5b00",
+          backgroundColor: "#fff2e0",
           fillStyle: "solid",
           strokeWidth: 1,
           roughness: 0,
@@ -165,7 +165,7 @@ try {
       if (el.type === "arrow" || el.type === "line") {
         return {
           ...el,
-          strokeColor: "#495057",
+          strokeColor: "#615d59",
           strokeWidth: 1,
           roughness: 0,
           roundness: { type: 2 },
@@ -174,7 +174,7 @@ try {
       if (el.type === "text") {
         return {
           ...el,
-          strokeColor: "#343a40",
+          strokeColor: "#31302e",
           roughness: 0,
         };
       }

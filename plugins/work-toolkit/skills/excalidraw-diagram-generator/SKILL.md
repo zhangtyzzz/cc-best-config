@@ -130,11 +130,11 @@ Create the `.excalidraw` file with appropriate elements:
 - **Position**: `x`, `y` coordinates
 - **Size**: `width`, `height`
 - **Style**: `strokeColor`, `backgroundColor`, `fillStyle`
-- **Font**: `fontFamily: 5` (Excalifont - **required for all text elements**)
+- **Font**: `fontFamily: 2` (Helvetica - **required for all text elements**)
 - **Connections**: `points` array for arrows
 
 **Important**:
-- All visible text must be represented by explicit `text` elements with `fontFamily: 5` (Excalifont).
+- All visible text must be represented by explicit `text` elements with `fontFamily: 2` (Helvetica).
 - Do **not** rely on `rectangle.text`, `ellipse.text`, or `diamond.text` for primary labels. Those inline text fields are legacy placeholders and may render inconsistently in the PNG export pipeline.
 - Preferred pattern: create the shape first, then add a separate `text` element bound via `containerId`/`boundElements`.
 
@@ -170,7 +170,7 @@ Good (bound text — stays attached when container moves):
     "containerId": "box-1",
     "text": "核心执行引擎",
     "fontSize": 20,
-    "fontFamily": 5,
+    "fontFamily": 2,
     "textAlign": "center",
     "verticalAlign": "middle"
   }
@@ -238,13 +238,16 @@ Structure the complete Excalidraw file:
 2. **Spacing**: 
    - Horizontal gap: 200-300px between elements
    - Vertical gap: 100-150px between rows
-3. **Colors**: Use consistent color scheme
-   - Primary elements: Light blue (`#a5d8ff`)
-   - Secondary elements: Light green (`#b2f2bb`)
-   - Important/Central: Yellow (`#ffd43b`)
-   - Alerts/Warnings: Light red (`#ffc9c9`)
+3. **Colors**: Use consistent Notion Clean color scheme
+   - Primary elements: Soft blue (`#e7f0ff` fill, `#0075de` stroke)
+   - Secondary elements: Soft teal (`#e0f5ea` fill, `#2a9d99` stroke)
+   - Important/Central: Soft blue (`#e7f0ff` fill, `#0075de` stroke)
+   - Decision points: Warm cream (`#fff2e0` fill, `#dd5b00` stroke)
+   - Alerts/Warnings: Soft pink (`#ffe6f0` fill, `#e0429a` stroke)
+   - Arrows/Lines: Warm gray (`#615d59`)
+   - Text: Near black (`#31302e`)
 4. **Text sizing**: 16-24px for readability
-5. **Font**: Always use `fontFamily: 5` (Excalifont) for all text elements
+5. **Font**: Always use `fontFamily: 2` (Helvetica) for all text elements
 6. **Arrow style**: Use straight arrows for simple flows, curved for complex relationships
 
 ### Complexity Management
@@ -352,7 +355,7 @@ Before delivering the diagram:
 - [ ] All elements have unique IDs
 - [ ] Coordinates prevent overlapping
 - [ ] Text is readable (font size 16+)
-- [ ] **All text elements use `fontFamily: 5` (Excalifont)**
+- [ ] **All text elements use `fontFamily: 2` (Helvetica)**
 - [ ] Arrows connect logically
 - [ ] Colors follow consistent scheme
 - [ ] File is valid JSON
@@ -709,7 +712,7 @@ Skip export when:
 ## Limitations
 
 - Complex curves are simplified to straight/basic curved lines
-- Hand-drawn roughness is set to default (1)
+- Roughness is set to 0 (clean, non-hand-drawn style)
 - No embedded images support in auto-generation
 - Maximum recommended elements: 20 per diagram
 - No automatic collision detection (use spacing guidelines)

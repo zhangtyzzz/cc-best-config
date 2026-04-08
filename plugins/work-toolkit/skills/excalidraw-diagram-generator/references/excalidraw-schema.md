@@ -37,12 +37,12 @@ interface BaseElement {
   width: number;               // Width in pixels
   height: number;              // Height in pixels
   angle: number;               // Rotation angle in radians (usually 0)
-  strokeColor: string;         // Hex color, e.g., "#1e1e1e"
+  strokeColor: string;         // Hex color, e.g., "#0075de"
   backgroundColor: string;     // Hex color or "transparent"
   fillStyle: "solid" | "hachure" | "cross-hatch";
   strokeWidth: number;         // 1-4 typically
   strokeStyle: "solid" | "dashed" | "dotted";
-  roughness: number;           // 0-2, controls hand-drawn effect (1 = default)
+  roughness: number;           // 0 = clean lines (default), 1-2 for hand-drawn
   opacity: number;             // 0-100
   groupIds: string[];          // IDs of groups this element belongs to
   frameId: null;               // Usually null
@@ -82,8 +82,8 @@ interface RectangleElement extends BaseElement {
     "y": 100,
     "width": 200,
     "height": 100,
-    "strokeColor": "#1e1e1e",
-    "backgroundColor": "#a5d8ff",
+    "strokeColor": "#0075de",
+    "backgroundColor": "#e7f0ff",
     "roundness": { "type": 3 },
     "boundElements": [{ "id": "rect1-text", "type": "text" }]
   },
@@ -97,7 +97,7 @@ interface RectangleElement extends BaseElement {
     "containerId": "rect1",
     "text": "My Box",
     "fontSize": 20,
-    "fontFamily": 5,
+    "fontFamily": 2,
     "textAlign": "center",
     "verticalAlign": "middle"
   }
@@ -176,7 +176,7 @@ interface TextElement extends BaseElement {
   type: "text";
   text: string;
   fontSize: number;
-  fontFamily: number;          // Prefer 5 = Excalifont for stable document exports
+  fontFamily: number;          // Prefer 2 = Helvetica for clean, professional output
   textAlign: "left" | "center" | "right";
   verticalAlign: "top" | "middle" | "bottom";
   roundness: null;             // Text has no roundness
@@ -194,7 +194,7 @@ interface TextElement extends BaseElement {
   "height": 25,
   "text": "Hello World",
   "fontSize": 20,
-  "fontFamily": 5,
+  "fontFamily": 2,
   "textAlign": "left",
   "verticalAlign": "top",
   "roundness": null
@@ -211,7 +211,7 @@ For stable exports, especially when using `export-to-png.mjs`, prefer this struc
 
 1. Draw the node shape (`rectangle`, `ellipse`, `diamond`) without inline text.
 2. Add a separate `text` element bound via `containerId`.
-3. Use `fontFamily: 5` for all `text` elements.
+3. Use `fontFamily: 2` for all `text` elements.
 
 This is more reliable than embedding labels directly in shape elements.
 
@@ -231,12 +231,21 @@ interface Binding {
 
 | Color Name | Hex Code | Use Case |
 |------------|----------|----------|
-| Black | `#1e1e1e` | Default stroke |
-| Light Blue | `#a5d8ff` | Primary entities |
-| Light Green | `#b2f2bb` | Process steps |
-| Yellow | `#ffd43b` | Important/Central |
-| Light Red | `#ffc9c9` | Warnings/Errors |
-| Cyan | `#96f2d7` | Secondary items |
+| Near Black | `#31302e` | Default text |
+| Blue | `#0075de` | Primary stroke |
+| Soft Blue | `#e7f0ff` | Primary entities fill |
+| Light Blue | `#f2f9ff` | Secondary/branch fill |
+| Orange | `#dd5b00` | Decision stroke |
+| Warm Cream | `#fff2e0` | Decision fill |
+| Pink | `#e0429a` | Warning stroke |
+| Soft Pink | `#ffe6f0` | Warning fill |
+| Teal | `#2a9d99` | Success/data store stroke |
+| Soft Teal | `#e0f5ea` | Success/data store fill |
+| Purple | `#7c5bad` | Secondary class stroke |
+| Soft Purple | `#f3eff7` | Secondary class fill |
+| Warm Gray | `#615d59` | Arrows/lines |
+| Warm Light Gray | `#a39e98` | Container stroke |
+| Warm White | `#f6f5f4` | Container fill |
 | Transparent | `transparent` | No fill |
 | White | `#ffffff` | Background |
 
@@ -291,9 +300,9 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
 | ID | Name | Description |
 |----|------|-------------|
 | 1 | Virgil | Hand-drawn style |
-| 2 | Helvetica | Clean sans-serif |
+| 2 | Helvetica | Clean sans-serif (recommended default) |
 | 3 | Cascadia | Monospace |
-| 5 | Excalifont | Recommended default for stable exports |
+| 5 | Excalifont | Hand-drawn style (alternative) |
 
 ## Validation Rules
 
@@ -304,7 +313,7 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
 - `opacity` must be 0-100
 
 ⚠️ **Recommended:**
-- Keep `roughness` at 1 for consistency
+- Keep `roughness` at 0 for clean, professional lines
 - Use `strokeWidth` of 2 for clarity
 - Set `isDeleted` to `false`
 - Set `locked` to `false`
@@ -326,12 +335,12 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
       "width": 200,
       "height": 100,
       "angle": 0,
-      "strokeColor": "#1e1e1e",
-      "backgroundColor": "#a5d8ff",
+      "strokeColor": "#31302e",
+      "backgroundColor": "#e7f0ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -355,12 +364,12 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
       "height": 24,
       "containerId": "box1",
       "angle": 0,
-      "strokeColor": "#1e1e1e",
+      "strokeColor": "#31302e",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 1,
+      "roughness": 0,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -376,7 +385,7 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
       "locked": false,
       "text": "Hello",
       "fontSize": 20,
-      "fontFamily": 5,
+      "fontFamily": 2,
       "textAlign": "center",
       "verticalAlign": "middle"
     }

@@ -7,7 +7,7 @@ Usage:
 
 Options:
     --style {solid|dashed|dotted}    Arrow line style (default: solid)
-    --color HEX                      Arrow color (default: #1e1e1e)
+    --color HEX                      Arrow color (default: #615d59)
     --label TEXT                     Add text label on the arrow
     --use-edit-suffix                Edit via .excalidraw.edit to avoid editor overwrite issues (enabled by default; use --no-use-edit-suffix to disable)
 
@@ -72,7 +72,7 @@ def create_arrow(
     to_x: float,
     to_y: float,
     style: str = "solid",
-    color: str = "#1e1e1e",
+    color: str = "#615d59",
     label: str = None
 ) -> list:
     """
@@ -106,7 +106,7 @@ def create_arrow(
         "fillStyle": "solid",
         "strokeWidth": 2,
         "strokeStyle": style,
-        "roughness": 1,
+        "roughness": 0,
         "opacity": 100,
         "groupIds": [],
         "frameId": None,
@@ -152,7 +152,7 @@ def create_arrow(
             "fillStyle": "solid",
             "strokeWidth": 2,
             "strokeStyle": "solid",
-            "roughness": 1,
+            "roughness": 0,
             "opacity": 100,
             "groupIds": [],
             "frameId": None,
@@ -168,7 +168,7 @@ def create_arrow(
             "locked": False,
             "text": label,
             "fontSize": 14,
-            "fontFamily": 5,
+            "fontFamily": 2,
             "textAlign": "center",
             "verticalAlign": "top",
             "containerId": None,
@@ -188,7 +188,7 @@ def add_arrow_to_diagram(
     to_x: float,
     to_y: float,
     style: str = "solid",
-    color: str = "#1e1e1e",
+    color: str = "#615d59",
     label: str = None
 ) -> None:
     """
@@ -237,7 +237,7 @@ def main():
         print("Usage: python add-arrow.py <diagram_path> <from_x> <from_y> <to_x> <to_y> [OPTIONS]")
         print("\nOptions:")
         print("  --style {solid|dashed|dotted}    Line style (default: solid)")
-        print("  --color HEX                      Color (default: #1e1e1e)")
+        print("  --color HEX                      Color (default: #615d59)")
         print("  --label TEXT                     Text label on arrow")
         print("  --use-edit-suffix                Edit via .excalidraw.edit to avoid editor overwrite issues (enabled by default; use --no-use-edit-suffix to disable)")
         print("\nExamples:")
@@ -253,7 +253,7 @@ def main():
     
     # Parse optional arguments
     style = "solid"
-    color = "#1e1e1e"
+    color = "#615d59"
     label = None
     # Default: use edit suffix to avoid editor overwrite issues
     use_edit_suffix = True
