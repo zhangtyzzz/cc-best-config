@@ -45,6 +45,16 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 CLI 工具时走 cli-agents 模式。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
 - **oss-image-hosting** — 将 Markdown 中的本地图片上传到阿里云 OSS，生成短效签名 URL 并替换路径。PreToolUse hook 自动检测环境（oss2 安装、.env 配置），上传文件 1 天后自动过期
 
+## 版本管理
+
+插件版本号在 `plugins/work-toolkit/.claude-plugin/plugin.json` 的 `version` 字段中维护，遵循 [semver](https://semver.org/) 规范：
+
+- **patch**（0.2.0 → 0.2.1）：bug 修复、模板微调、文档修正
+- **minor**（0.2.0 → 0.3.0）：新增 skill、现有 skill 功能增强、新增 hook
+- **major**（0.x → 1.0）：破坏性变更、大规模重构
+
+**每次发布更新时必须 bump 版本号。** Claude Code 通过版本号判断是否需要更新插件——如果改了代码但没 bump 版本号，用户不会收到更新（缓存机制）。用户可通过 `claude plugin update work-toolkit@cc-best-config` 拉取新版本，再执行 `/reload-plugins` 生效。注意：第三方 marketplace 的 auto-update 默认关闭，用户需在 `/plugin` 管理界面手动开启。
+
 ## 文档同步约定
 
 - 新增 skill 后，同时更新 `README.md`、`README_CN.md` 和本文件中的技能清单。
