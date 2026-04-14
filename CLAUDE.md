@@ -43,7 +43,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
 - **cli-agents** — 通过 exec 模式将任意 CLI AI 工具（Codex、Gemini CLI、Claude CLI 等）作为子 Agent 调用，进程退出即完成，结果写入文件直接读取，无需 tmux 或轮询
 - **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 CLI 工具时走 cli-agents 模式。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
-- **oss-image-hosting** — 将 Markdown 中的本地图片上传到阿里云 OSS，生成短效签名 URL 并替换路径。PreToolUse hook 自动检测环境（oss2 安装、.env 配置），上传文件 1 天后自动过期
+- **piclist-image-hosting** — 将 Markdown 中的本地图片通过 PicList 上传到图床（GitLab），用永久在线 URL 替换本地路径。依赖本地运行的 PicList App，无需 API key 配置
 
 ## 版本管理
 
