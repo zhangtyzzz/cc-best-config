@@ -37,7 +37,7 @@ claude plugin install work-toolkit
 | **image-gen** | Universal AI image generation via any OpenAI-compatible API endpoint. First-class reference-image workflow: provide one or more reference images to generate new content that preserves the same visual style, character design, and IP consistency. Supports local files, face editing, aspect ratios, and resolutions up to 4K. |
 | **cli-agents** | Use any CLI AI tool (Codex, Gemini CLI, Claude CLI, etc.) as a sub-agent via exec mode. The process exits when done; results go to a file; no tmux, no polling. Supports parallel background calls and multi-round revision loops. |
 | **critic-loop** | Multi-agent quality loop: N Worker agents execute subtasks while a dedicated Critic evaluates output against a rubric and drives iterative refinement until all criteria pass. Uses native sub-agents by default; falls back to CLI exec when the user specifies a tool. Use when quality is judged by criteria (research, docs, code with design tradeoffs) rather than a numeric metric. |
-| **piclist-image-hosting** | Upload local images in Markdown to an image host (GitLab) via PicList and replace paths with permanent online URLs. Relies on the locally running PicList App — no API key configuration needed. |
+| **piclist-image-hosting** | Upload local images in Markdown to the user's configured image host via PicList and replace paths with online URLs. Relies on the locally running PicList App — no extra API key configuration needed in this repo. |
 
 ## Notes
 
@@ -45,7 +45,7 @@ claude plugin install work-toolkit
 - `baoyu-article-illustrator` depends on article-specific prompt files and is designed to work with `baoyu-image-gen` for final rendering.
 - `auto-research` is for tasks with a cheap, objective evaluation loop. If the metric is noisy or subjective, it is the wrong tool.
 - `cli-agents` requires the target CLI tool to be installed and authenticated. Each invocation starts a fresh session — context is carried by the orchestrator, not retained by the agent.
-- `piclist-image-hosting` requires the PicList App running locally (HTTP API on `127.0.0.1:36677`). No API keys or `.env` configuration needed — it reuses PicList's existing image host settings.
+- `piclist-image-hosting` requires the PicList App running locally (HTTP API on `127.0.0.1:36677`) with an image host already configured. No additional API keys or `.env` needed in this repo.
 
 ### Hooks
 
