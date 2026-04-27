@@ -315,7 +315,7 @@ Use separate text elements positioned near arrow midpoint:
   type: "text",
   text: "Label text",
   fontSize: 20,
-  fontFamily: 2,        // 1=Virgil, 2=Helvetica (default), 3=Cascadia
+  fontFamily: 2,        // 1=Virgil, 2=Helvetica category, 3=Cascadia; PNG export injects CJK fallback fonts
   textAlign: "left",
   verticalAlign: "top"
 }
