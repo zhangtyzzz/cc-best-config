@@ -130,11 +130,11 @@ Create the `.excalidraw` file with appropriate elements:
 - **Position**: `x`, `y` coordinates
 - **Size**: `width`, `height`
 - **Style**: `strokeColor`, `backgroundColor`, `fillStyle`
-- **Font**: `fontFamily: 2` (Helvetica - **required for all text elements**)
+- **Font**: `fontFamily: 2` (Helvetica category; PNG export injects OS-aware CJK fallback fonts)
 - **Connections**: `points` array for arrows
 
 **Important**:
-- All visible text must be represented by explicit `text` elements with `fontFamily: 2` (Helvetica).
+- All visible text must be represented by explicit `text` elements with `fontFamily: 2` (Helvetica category). For Chinese/Japanese/Korean text, the PNG exporter injects OS-aware fallback fonts: macOS prefers PingFang SC then Hiragino Sans GB; Windows prefers Microsoft YaHei; Linux prefers Noto Sans CJK.
 - Do **not** rely on `rectangle.text`, `ellipse.text`, or `diamond.text` for primary labels. Those inline text fields are legacy placeholders and may render inconsistently in the PNG export pipeline.
 - Preferred pattern: create the shape first, then add a separate `text` element bound via `containerId`/`boundElements`.
 
@@ -247,7 +247,7 @@ Structure the complete Excalidraw file:
    - Arrows/Lines: Warm gray (`#615d59`)
    - Text: Near black (`#31302e`)
 4. **Text sizing**: 16-24px for readability
-5. **Font**: Always use `fontFamily: 2` (Helvetica) for all text elements
+5. **Font**: Use `fontFamily: 2` for all text elements. When exporting CJK text, the PNG exporter applies OS-aware fallback fonts automatically; use `--cjk-font "Font Name"` if a specific installed CJK font is required.
 6. **Arrow style**: Use straight arrows for simple flows, curved for complex relationships
 
 ### Complexity Management
@@ -355,7 +355,7 @@ Before delivering the diagram:
 - [ ] All elements have unique IDs
 - [ ] Coordinates prevent overlapping
 - [ ] Text is readable (font size 16+)
-- [ ] **All text elements use `fontFamily: 2` (Helvetica)**
+- [ ] **All text elements use `fontFamily: 2` (Helvetica category; CJK fallback handled by exporter)**
 - [ ] Arrows connect logically
 - [ ] Colors follow consistent scheme
 - [ ] File is valid JSON
@@ -674,20 +674,25 @@ node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw /path/to/output.p
 # Custom scale (3x for very high-res)
 node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw --scale 3
 
+# Override CJK fallback font when exporting Chinese/Japanese/Korean text
+node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw --cjk-font "PingFang SC"
+
 # Skip upscaling (1x)
 node <skill-path>/scripts/export-to-png.mjs diagram.excalidraw --no-scale
 ```
 
 ### What the Script Does
 
-1. **Loads Excalidraw in a headless browser** — Uses Playwright to run Chromium with `@excalidraw/excalidraw` loaded from esm.sh CDN.
-2. **Calls `exportToBlob()`** — The same rendering function Excalidraw uses for its own "Copy as PNG" feature, ensuring pixel-perfect output with correct element positioning, fonts, and colors.
-3. **Saves the PNG** at the specified scale (default 2x for crisp retina display).
+1. **Loads Excalidraw in a headless browser** — Uses Playwright to run Chromium with `@excalidraw/excalidraw` loaded from pinned esm.sh URLs with fallback query variants.
+2. **Applies font fallback** — Keeps Excalidraw text elements at `fontFamily: 2`, then injects OS-aware CJK fallback fonts into the browser page before export, including a CJK-only `@font-face` override for Helvetica. Defaults: macOS `PingFang SC` → `Hiragino Sans GB`; Windows `Microsoft YaHei`; Linux `Noto Sans CJK`. Use `--cjk-font` to override.
+3. **Calls `exportToBlob()`** — The same rendering function Excalidraw uses for its own "Copy as PNG" feature, ensuring pixel-perfect output with correct element positioning, fonts, and colors.
+4. **Saves the PNG** at the specified scale (default 2x for crisp retina display).
 
 ### Requirements
 
 - Node.js 18+
 - Playwright with Chromium (installed in skill's `scripts/node_modules/`)
+- For CJK diagrams, at least one local CJK font installed. The exporter detects OS defaults: PingFang SC / Hiragino Sans GB on macOS, Microsoft YaHei on Windows, Noto Sans CJK on Linux.
 - Internet access (for esm.sh CDN on first run; subsequent runs use browser cache)
 
 ### When to Export

@@ -7,12 +7,13 @@
  * output identical to Excalidraw's own "Copy as PNG".
  *
  * Usage:
- *   node export-to-png.mjs input.excalidraw [output.png] [--scale 2]
+ *   node export-to-png.mjs input.excalidraw [output.png] [--scale 2] [--cjk-font "PingFang SC"]
  */
 
 import { chromium } from "playwright";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve, basename } from "path";
+import { platform } from "os";
 import { parseArgs } from "util";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     scale: { type: "string", default: "2" },
+    "cjk-font": { type: "string" },
     "no-scale": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -29,7 +31,7 @@ const { values, positionals } = parseArgs({
 
 if (values.help || positionals.length === 0) {
   console.log(
-    `Usage: node export-to-png.mjs <input.excalidraw> [output.png] [--scale N] [--no-scale]`
+    `Usage: node export-to-png.mjs <input.excalidraw> [output.png] [--scale N] [--no-scale] [--cjk-font "Font Name"]`
   );
   process.exit(0);
 }
@@ -43,6 +45,49 @@ if (Number.isNaN(scale) || scale < 1) {
 const outputPath = positionals[1]
   ? resolve(positionals[1])
   : inputPath.replace(/\.excalidraw$/, ".png");
+
+function defaultCjkFonts() {
+  switch (platform()) {
+    case "darwin":
+      return ["PingFang SC", "Hiragino Sans GB", "Songti SC", "Heiti SC"];
+    case "win32":
+      return ["Microsoft YaHei", "Microsoft JhengHei", "SimHei", "SimSun"];
+    default:
+      return [
+        "Noto Sans CJK SC",
+        "Noto Sans CJK TC",
+        "Noto Sans CJK JP",
+        "Noto Sans CJK KR",
+        "WenQuanYi Micro Hei",
+        "Source Han Sans SC",
+      ];
+  }
+}
+
+function cssQuote(value) {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+const genericFonts = new Set(["serif", "sans-serif", "monospace", "cursive", "fantasy"]);
+const fontFallback = [
+  values["cjk-font"],
+  ...defaultCjkFonts(),
+  "Helvetica",
+  "Arial",
+  "sans-serif",
+].filter(Boolean);
+const cssFontFamily = fontFallback
+  .map((font) => (genericFonts.has(font) ? font : cssQuote(font)))
+  .join(", ");
+const cjkFontSources = fontFallback
+  .filter((font) => !genericFonts.has(font) && font !== "Helvetica" && font !== "Arial")
+  .map((font) => `local(${cssQuote(font)})`)
+  .join(", ");
+const excalidrawImportUrls = [
+  "https://esm.sh/@excalidraw/excalidraw@0.18.0?bundle-deps",
+  "https://esm.sh/@excalidraw/excalidraw@0.18.0?bundle",
+  "https://esm.sh/@excalidraw/excalidraw?bundle",
+];
 
 // ---------------------------------------------------------------------------
 // Read & validate
@@ -61,17 +106,45 @@ try {
 // ---------------------------------------------------------------------------
 const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Helvetica";
+    src: ${cjkFontSources};
+    unicode-range: U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-312F, U+31A0-31BF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FF00-FFEF;
+  }
+  @font-face {
+    font-family: "ExcalidrawCJKFallback";
+    src: ${cjkFontSources};
+  }
+  :root, body, svg, canvas, .excalidraw {
+    font-family: "ExcalidrawCJKFallback", ${cssFontFamily};
+  }
+</style>
+</head>
 <body>
 <div id="status">loading</div>
 <script type="module">
 try {
   document.getElementById("status").textContent = "importing";
 
-  // esm.sh bundles all transitive dependencies (react, jotai, etc.)
-  const { exportToBlob } = await import(
-    "https://esm.sh/@excalidraw/excalidraw?bundle-deps"
-  );
+  // Try pinned and fallback esm.sh URLs. Some esm.sh query variants can 404.
+  const importUrls = ${JSON.stringify(excalidrawImportUrls)};
+  let exportToBlob;
+  let lastImportError;
+  for (const importUrl of importUrls) {
+    try {
+      ({ exportToBlob } = await import(importUrl));
+      break;
+    } catch (e) {
+      lastImportError = e;
+      console.warn("Import failed:", importUrl, e.message);
+    }
+  }
+  if (!exportToBlob) {
+    throw lastImportError || new Error("Failed to import @excalidraw/excalidraw");
+  }
 
   document.getElementById("status").textContent = "exporting";
 
