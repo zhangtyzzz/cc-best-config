@@ -2,78 +2,161 @@
 
 [English](./README.md)
 
-精选 Claude Code 插件市场 — 开箱即用的 skills、hooks、rules 和 agents，提升 AI 辅助开发效率。
+Claude Code 最佳配置集合 — 以 marketplace 形式分发开箱即用的 skills、hooks、rules 和 agents，面向日常研发、内容生产、图像生成和多 Agent 工作流。
 
-## 特点
+## 亮点
 
-- 内置 `auto-research` 这类可度量迭代优化工作流，要求主 agent 保持监督职责，只有命中显式停止条件才允许结束。
-- 包含内容与媒体相关技能，既能为文章配图，也能通过多家 API 批量生成图片。
-- 以 marketplace 插件方式分发，放在 `plugins/work-toolkit/skills/` 下的新技能会随同插件一起安装。
+- **Agent Bridge 内置化**：通过 `agent-task` 将任务委托给 Codex、OpenCode、QoderCLI，适合代码评审、解释、对抗式审查和通用外部 Agent 任务。
+- **工程流程分级**：`pragmatic-engineering` 会按任务复杂度决定直接执行、先规划、还是组织子 Agent。
+- **质量循环**：`critic-loop` 使用 Worker + Critic 模式，让重要输出经过明确 rubric 评估和修订。
+- **自动迭代优化**：`auto-research` 面向可量化目标持续实验，主 Agent 必须监督 stop condition。
+- **内容与图片工作流**：包含文章配图、通用图像生成、Excalidraw 图表、本地图片转图床等技能。
 
 ## 安装
 
-```bash
-# 1. 添加插件市场
-claude plugin marketplace add zhangtyzzz/cc-best-config
+推荐在 Claude Code 内使用插件 UI 命令安装：
 
-# 2. 安装插件
-claude plugin install work-toolkit
+```text
+/plugin marketplace add zhangtyzzz/cc-best-config
+/plugin install work-toolkit@cc-best-config
+/reload-plugins
 ```
 
-## 已有内容
+等价 CLI 命令：
 
-### Skills
+```bash
+claude plugin marketplace add zhangtyzzz/cc-best-config
+claude plugin install work-toolkit@cc-best-config
+```
+
+后续更新：
+
+```bash
+claude plugin update work-toolkit@cc-best-config
+```
+
+然后在当前 Claude Code 会话内重新加载：
+
+```text
+/reload-plugins
+```
+
+> 注意：插件通过版本号判断更新。发布变更时必须 bump `plugins/work-toolkit/.claude-plugin/plugin.json` 的 `version`。
+
+## 外部 CLI Agent 委托
+
+`agent-task` 是本插件内置的 Agent Bridge 入口，替代旧的 `cli-agents` 工作流。
+
+### 支持的 Agent
+
+| Agent | CLI | 擅长领域 |
+|------|-----|---------|
+| Codex | `codex` | 安全审计、边界条件、深度推理、TypeScript |
+| OpenCode | `opencode` | 多模型切换、Python、低成本、本地模型 |
+| QoderCLI | `qodercli` | 数据分析、SQL、业务逻辑 |
+
+只需安装并登录对应 CLI。插件不会代替 CLI 做鉴权，具体认证由各 CLI 自己处理。
+
+### 典型用法
+
+用户可以直接自然语言触发，例如：
+
+```text
+用 codex review 这次改动
+让 opencode 解释 src/main.ts
+用 qodercli 看一下这段 SQL 逻辑
+让 codex 和 opencode 都评审一下这个分支
+```
+
+`agent-task` 会通过 vendored bridge runtime 执行：
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task review --agent codex
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task review --agents codex,opencode
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task adversarial-review --focus security
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task explain src/main.ts --agent opencode
+```
+
+### CLI 可用性提示
+
+插件带有轻量级 `UserPromptSubmit` hook：
+
+```text
+Available external CLI agents: codex,opencode,qodercli. Missing: none.
+```
+
+它只做快速 `command -v` 检查，不登录、不配置、不阻塞提示。缺失 CLI 只是上下文提醒。
+
+## Skills
 
 | 技能 | 说明 |
 |------|------|
-| **data-analysis** | 分析 CSV/Excel/数据库数据，生成专业报告。支持数据库协作分析模式（ODPS、BigQuery 等）。 |
+| **agent-task** | 通过内置 Agent Bridge 委托外部 CLI Agent。支持 Codex、OpenCode、QoderCLI，可用于代码评审、对抗式评审、代码解释、通用任务委托和多 Agent 对比。 |
+| **critic-loop** | 多 Agent 质量循环：Worker 产出，Critic 按 rubric 评审并驱动修订。默认使用原生子 Agent，用户指定 Codex/OpenCode/QoderCLI 时走 Agent Bridge。 |
+| **auto-research** | 面向可量化目标的自动迭代优化。主 Agent 负责监督，必须核验 stop condition，未达标就继续推进或重启 worker。 |
+| **pragmatic-engineering** | 分级工程纪律，按任务复杂度自动选择 L0 直接执行、L1 简要检查、L2 规划、L3 子 Agent 编排。 |
+| **data-analysis** | 分析 CSV、Excel、数据库结果和业务指标，使用 Python 生成证据充分的报告。 |
 | **frontend-design** | 创建高质量、生产级前端界面，避免通用 AI 风格。 |
 | **skill-creator** | 创建、修改、优化 skills，支持 eval 测试和性能基准分析。 |
-| **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）。 |
-| **auto-research** | 面向可量化目标的自动迭代优化技能。设定目标文件与评测指标后，AI 会持续实验；主 agent 负责监督，如果子 agent 提前停下，需要继续推进直到满足显式 stop condition。 |
-| **baoyu-article-illustrator** | 分析文章结构，判断配图位置，并以 Type × Style 的方式生成风格统一的插图。 |
-| **baoyu-image-gen** | 通过 OpenAI、Google、OpenRouter、DashScope、ModelScope、即梦、豆包、Replicate 等 API 生成图片，支持参考图、比例和批量模式。 |
-| **pragmatic-engineering** | 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），简单任务快速完成，复杂特性获得完整的设计与评审流程。 |
-| **image-gen** | 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64 编码、face 编辑、比例和分辨率控制。 |
-| **cli-agents** | 通过 exec 模式将任意 CLI AI 工具（Codex、Gemini CLI、Claude CLI 等）作为子 Agent 调用，进程退出即完成，结果写入文件直接读取，无需 tmux 或轮询。支持并行后台调用和多轮修订循环。 |
-| **critic-loop** | 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 CLI 工具时走 cli-agents 模式，循环直到所有标准通过。适合用标准判断质量的任务（调研报告、技术文档、有设计决策的代码），而非使用数字指标衡量的任务。 |
-| **piclist-image-hosting** | 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，用在线 URL 替换本地路径。依赖本地运行的 PicList App，无需额外 API key 配置。 |
+| **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表：流程图、架构图、思维导图等。 |
+| **baoyu-article-illustrator** | 分析文章结构和配图位置，用 Type × Style 工作流生成风格一致的插图。 |
+| **baoyu-image-gen** | 通过多家图像 API 生成图片，支持参考图、比例控制、批量生成和保存 prompt 文件稳定执行。 |
+| **image-gen** | 通用 AI 图像生成，支持 OpenAI-compatible API、参考图、本地文件 base64、face 编辑、比例和分辨率控制。 |
+| **piclist-image-hosting** | 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，并替换为在线 URL。 |
 
-## 使用说明
+## Hooks
 
-- `baoyu-image-gen` 依赖 `bun` 或 `npx -y bun` 运行脚本，并通过环境变量或 `EXTEND.md` 读取 provider 配置。
-- `baoyu-article-illustrator` 会先生成文章对应的 prompt 文件，再交给图片生成流程执行，不建议直接跳过这些中间产物。
-- `auto-research` 适合有明确、低成本、可重复评测的任务；如果指标主观或噪声太大，就不适合用它。
-- `cli-agents` 需要目标 CLI 工具已安装并完成认证。每次调用都是全新 session，上下文由编排者维护并在每次调用时注入，而非由 agent 自动保留。
-- `piclist-image-hosting` 需要本地运行 PicList App（HTTP API 在 `127.0.0.1:36677`）并已配置好图床。本仓库无需额外 API key 或 `.env` 配置。
-
-### Hooks
-
-| 钩子 | 事件 | 说明 |
+| Hook | Event | 说明 |
 |------|------|------|
-| **protect-files** | PreToolUse | 阻止修改 .env、密钥、凭证等敏感文件。 |
-| **notify-push** | Notification + Stop | 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback。设置 `NOTIFY_URL` 环境变量启用移动端推送。 |
-| **stop-guard** | Stop | 会话结束前检查任务完成度，并检查文档是否需要更新。 |
+| **agent-cli-context** | UserPromptSubmit | 提示 Codex、OpenCode、QoderCLI 是否安装，供 `agent-task` 选择外部 Agent 时参考。 |
+| **protect-files** | PreToolUse | 阻止修改 `.env`、密钥、凭证等敏感文件。 |
+| **notify-push** | Notification + Stop | 带任务上下文的推送通知，支持 Bark 等 webhook，并 fallback 到桌面通知。设置 `NOTIFY_URL` 启用移动端推送。 |
+| **stop-guard** | Stop | 会话结束前检查任务完成度，并提示是否需要同步文档。 |
+
+## 验证与本地开发
+
+本仓库提供标准验证脚本：
+
+```bash
+# 静态验证 + runtime smoke test
+scripts/verify-plugin.sh
+
+# 端到端验证：创建临时本地 marketplace，安装插件，再检查安装缓存内容
+scripts/verify-plugin.sh --e2e
+```
+
+脚本会执行：
+
+- `claude plugin validate .`
+- `claude plugin validate plugins/work-toolkit`
+- 检查关键 skill、hook、bridge runtime 文件存在
+- 确认旧 `cli-agents` 目录不存在
+- 运行 bridge `--task list` 和 `--task health`
+- 运行 `agent-cli-context.sh`
+- 搜索非预期的 `cli-agents` 旧引用
+- `--e2e` 模式会创建临时 local marketplace，通过 `claude plugin install --scope local` 安装并验证安装结果，然后自动清理
 
 ## 项目结构
 
-```
+```text
 ├── .claude-plugin/
 │   └── marketplace.json      Marketplace 清单
 ├── plugins/
 │   └── work-toolkit/         主插件
 │       ├── .claude-plugin/
 │       │   └── plugin.json   插件清单
-│       ├── skills/           技能定义（每个技能一个目录）
+│       ├── skills/           技能定义
 │       ├── hooks/            钩子脚本
 │       ├── commands/         斜杠命令
 │       ├── agents/           子代理定义
 │       └── rules/            通用规则
+├── scripts/
+│   └── verify-plugin.sh      本地与端到端验证脚本
 ├── CLAUDE.md
 ├── README.md
 └── LICENSE
 ```
 
-## 许可证
+## License
 
 [Apache-2.0](./LICENSE)

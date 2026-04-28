@@ -41,9 +41,60 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **baoyu-image-gen** — 基于多家图像 API 的图片生成技能，支持参考图、比例控制、批量生成和基于保存 prompt 文件的稳定执行
 - **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
-- **cli-agents** — 通过 exec 模式将任意 CLI AI 工具（Codex、Gemini CLI、Claude CLI 等）作为子 Agent 调用，进程退出即完成，结果写入文件直接读取，无需 tmux 或轮询
-- **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 CLI 工具时走 cli-agents 模式。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
+- **agent-task** — 通过内置 Agent Bridge 将任务委托给外部 CLI 编码 Agent。支持 Codex、OpenCode、QoderCLI，可用于代码评审、对抗式评审、代码解释、通用任务委托和多 Agent 结果对比
+- **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 Codex、OpenCode 或 QoderCLI 时走 Agent Bridge。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
 - **piclist-image-hosting** — 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，用在线 URL 替换本地路径。依赖本地运行的 PicList App，无需额外 API key 配置
+
+## 标准开发 / 测试 / PR / Review 流程
+
+对本仓库的 plugin、skill、hook、bridge runtime 做非平凡变更时，按以下闭环执行：
+
+```mermaid
+flowchart TD
+  A[1. 开发实现] --> B[2. 本地脚本验证]
+  B --> C[端到端安装验证]
+  C --> D{测试是否通过?}
+  D -- 否 --> A
+  D -- 是 --> E[3. 创建 PR]
+  E --> F[4. 其他 Agent 并行 Review]
+  F --> G{有值得修复的问题?}
+  G -- 有 --> H[5. 修复并补充到 PR]
+  H --> B
+  G -- 无 / 无需修复 --> I[6. 通知用户人工检查并准备合并]
+```
+
+1. **开发实现**
+   - 明确变更属于新增 skill、替换/删除公开 skill、hook 变更、文档变更还是 runtime 变更。
+   - 涉及公开能力变化时，同步更新 `README.md`、`README_CN.md`、`CLAUDE.md`。
+   - 每次发布型变更必须 bump `plugins/work-toolkit/.claude-plugin/plugin.json` 的 `version`。
+
+2. **本地脚本 + 端到端测试**
+   - 先运行 `scripts/verify-plugin.sh`。
+   - 再运行 `scripts/verify-plugin.sh --e2e`。
+   - 脚本必须覆盖 `claude plugin validate .`、`claude plugin validate plugins/work-toolkit`、关键文件存在性、runtime smoke test、hook smoke test、旧引用检查。
+   - 端到端验证必须通过临时 local marketplace 执行 `claude plugin install --scope local`，并检查安装缓存中的 skill、hook、runtime 文件，而不是只验证源码目录。
+   - 不允许忽略 validator warning；能修就修，不能修必须在结果中说明原因。
+   - 变更涉及 `agent-task` / Agent Bridge 时，还要至少跑一次真实 bridge task；如果支持多个外部 CLI，逐个说明哪些真实可用、哪些因本机认证或模型配置失败。
+
+3. **创建 PR**
+   - 提交/PR 前查看 `git status --short`，不要把无关 untracked 文件、压缩包、临时文件带入提交。
+   - 仅在用户明确要求时创建 commit 或 PR。
+   - PR 描述必须包含 Summary 和 Test plan；Test plan 至少列出 `scripts/verify-plugin.sh` 和 `scripts/verify-plugin.sh --e2e` 的结果。
+
+4. **其他 Agent Review**
+   - PR 创建后或准备创建 PR 前，对非平凡变更使用 `agent-task` 并行触发 Codex、OpenCode、QoderCLI Review：
+     `node plugins/work-toolkit/skills/agent-task/scripts/bridge/bridge.js --task review --scope working-tree --agents codex,opencode,qoder`
+   - Review 结果要区分：真实缺陷、文档/示例问题、环境问题、误报。
+   - 如果某个外部 CLI 因认证、模型配置或超时失败，要记录为环境问题，不把它等同于代码通过。
+
+5. **修复 / 复测 / 再 Review 循环**
+   - 有值得修复的问题：修复并补充到 PR，然后重新运行本地脚本验证和端到端测试。
+   - 修复后再次触发必要的 Agent Review。
+   - 循环直到无问题，或剩余问题明确无需修复并说明原因。
+
+6. **通知用户人工检查**
+   - 自动验证和 Agent Review 都完成后，明确告知用户：可以进行人工 check，准备合并。
+   - 不要擅自合并或 push，除非用户明确授权。
 
 ## 版本管理
 
@@ -65,6 +116,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 
 - **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
 - **notify-push** — 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback（Notification + Stop）。设置 `NOTIFY_URL` 环境变量启用移动端推送
+- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 是否可用，供 agent-task 委托任务时参考；缺失工具不阻塞提示
 - **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
 
 ## 安装

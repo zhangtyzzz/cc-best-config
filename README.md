@@ -2,73 +2,157 @@
 
 [中文版](./README_CN.md)
 
-Curated Claude Code marketplace — production-ready skills, hooks, rules, and agents for AI-assisted development.
+A curated Claude Code marketplace for day-to-day engineering, content work, image generation, and multi-agent workflows. It ships production-ready skills, hooks, rules, and agents as one installable plugin.
 
 ## Highlights
 
-- Includes iterative optimization workflows such as `auto-research`, where the main agent stays responsible for supervision and must keep workers running until a real stop condition is met.
-- Bundles specialized content and media skills, including article illustration and API-based image generation.
-- Ships as a marketplace plugin, so new skills added under `plugins/work-toolkit/skills/` are installable through the same package.
+- **Built-in Agent Bridge**: `agent-task` delegates work to Codex, OpenCode, and QoderCLI for reviews, explanations, adversarial checks, and general external-agent tasks.
+- **Right-sized engineering process**: `pragmatic-engineering` matches workflow depth to task complexity.
+- **Quality loops**: `critic-loop` uses Worker + Critic passes with explicit rubrics for important deliverables.
+- **Metric-driven iteration**: `auto-research` keeps improving measurable targets until a verified stop condition is reached.
+- **Content and media workflows**: article illustration, image generation, Excalidraw diagrams, and Markdown image hosting.
 
 ## Install
 
-```bash
-# 1. Add marketplace
-claude plugin marketplace add zhangtyzzz/cc-best-config
+Recommended: install from inside Claude Code with the plugin UI commands:
 
-# 2. Install plugin
-claude plugin install work-toolkit
+```text
+/plugin marketplace add zhangtyzzz/cc-best-config
+/plugin install work-toolkit@cc-best-config
+/reload-plugins
 ```
 
-## What's Included
+CLI equivalent:
 
-### Skills
+```bash
+claude plugin marketplace add zhangtyzzz/cc-best-config
+claude plugin install work-toolkit@cc-best-config
+```
+
+Update later with:
+
+```bash
+claude plugin update work-toolkit@cc-best-config
+```
+
+Then reload the current Claude Code session:
+
+```text
+/reload-plugins
+```
+
+> Plugin updates are version-gated. Every release must bump `plugins/work-toolkit/.claude-plugin/plugin.json`.
+
+## External CLI agent delegation
+
+`agent-task` is the built-in Agent Bridge entry point for this toolkit. It replaces the old `cli-agents` workflow.
+
+### Supported agents
+
+| Agent | CLI | Strengths |
+|-------|-----|-----------|
+| Codex | `codex` | Security review, edge cases, deep reasoning, TypeScript |
+| OpenCode | `opencode` | Multi-model workflows, Python, cost efficiency, local models |
+| QoderCLI | `qodercli` | Data analysis, SQL, business logic |
+
+Install and authenticate the CLIs you want to use. Authentication stays with each CLI; the plugin does not manage API keys.
+
+### Typical prompts
+
+Use natural language:
+
+```text
+Use codex to review this change
+Ask opencode to explain src/main.ts
+Use qodercli to inspect this SQL logic
+Have codex and opencode both review this branch
+```
+
+The skill calls the vendored bridge runtime:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task review --agent codex
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task review --agents codex,opencode
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task adversarial-review --focus security
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task explain src/main.ts --agent opencode
+```
+
+### CLI availability context
+
+A lightweight `UserPromptSubmit` hook reports which supported CLIs are installed:
+
+```text
+Available external CLI agents: codex,opencode,qodercli. Missing: none.
+```
+
+It only runs fast `command -v` checks. It does not log in, mutate config, or block prompts when a CLI is missing.
+
+## Skills
 
 | Skill | Description |
 |-------|-------------|
-| **data-analysis** | Analyze CSV/Excel/database data and produce professional reports with Python. Supports database-assisted analysis by coordinating with query tools (ODPS, BigQuery, etc.). |
-| **frontend-design** | Create distinctive, production-grade frontend interfaces with high design quality. Avoids generic AI aesthetics. |
-| **skill-creator** | Create, modify, and optimize skills. Run evals, benchmark performance, and improve triggering accuracy. |
-| **excalidraw-diagram-generator** | Generate Excalidraw diagrams from natural language — flowcharts, architecture diagrams, mind maps, and more. |
-| **auto-research** | Anything with a measurable metric can be iteratively improved by AI — set a target file and a metric, then let AI loop autonomously to improve it. The main agent acts as supervisor and must continue or relaunch worker agents until an explicit stop condition is verified. |
-| **baoyu-article-illustrator** | Analyze an article, decide where visuals are needed, and generate consistent illustrations using a Type × Style workflow. |
-| **baoyu-image-gen** | Generate images through OpenAI, Google, OpenRouter, DashScope, ModelScope, Jimeng, Seedream, or Replicate APIs. Supports saved prompt files, references, aspect ratios, and batch mode. |
-| **pragmatic-engineering** | Graded engineering discipline that right-sizes process to task complexity. Triages tasks into four levels (L0 direct execute → L3 subagent orchestration) so simple changes stay fast while complex features get proper design and review gates. |
-| **image-gen** | Universal AI image generation via any OpenAI-compatible API endpoint. First-class reference-image workflow: provide one or more reference images to generate new content that preserves the same visual style, character design, and IP consistency. Supports local files, face editing, aspect ratios, and resolutions up to 4K. |
-| **cli-agents** | Use any CLI AI tool (Codex, Gemini CLI, Claude CLI, etc.) as a sub-agent via exec mode. The process exits when done; results go to a file; no tmux, no polling. Supports parallel background calls and multi-round revision loops. |
-| **critic-loop** | Multi-agent quality loop: N Worker agents execute subtasks while a dedicated Critic evaluates output against a rubric and drives iterative refinement until all criteria pass. Uses native sub-agents by default; falls back to CLI exec when the user specifies a tool. Use when quality is judged by criteria (research, docs, code with design tradeoffs) rather than a numeric metric. |
-| **piclist-image-hosting** | Upload local images in Markdown to the user's configured image host via PicList and replace paths with online URLs. Relies on the locally running PicList App — no extra API key configuration needed in this repo. |
+| **agent-task** | Delegate work to external CLI agents through the built-in Agent Bridge. Supports Codex, OpenCode, and QoderCLI for review, adversarial review, explanation, generic task delegation, and multi-agent comparison. |
+| **critic-loop** | Worker + Critic quality loop. Native sub-agents are the default; when the user requests Codex/OpenCode/QoderCLI, it uses Agent Bridge. |
+| **auto-research** | Autonomous improvement loop for measurable targets. The main agent supervises and must verify the stop condition before ending. |
+| **pragmatic-engineering** | Graded engineering discipline that chooses direct execution, lightweight review, planning, or sub-agent orchestration based on task complexity. |
+| **data-analysis** | Analyze CSV, Excel, database outputs, KPIs, and other tabular data with Python-backed reports. |
+| **frontend-design** | Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. |
+| **skill-creator** | Create, modify, benchmark, and optimize skills. |
+| **excalidraw-diagram-generator** | Generate Excalidraw flowcharts, architecture diagrams, mind maps, and related visuals from natural language. |
+| **baoyu-article-illustrator** | Analyze article structure and generate consistent illustrations with a Type × Style workflow. |
+| **baoyu-image-gen** | Generate images through multiple providers, with reference images, aspect ratios, batch mode, and saved prompt files. |
+| **image-gen** | Universal OpenAI-compatible image generation with references, local file base64, face editing, aspect ratio, and resolution controls. |
+| **piclist-image-hosting** | Upload local Markdown images through PicList and replace local paths with public URLs. |
 
-## Notes
-
-- `baoyu-image-gen` uses `bun` or `npx -y bun` to run its script and expects provider credentials via env vars and/or `EXTEND.md`.
-- `baoyu-article-illustrator` depends on article-specific prompt files and is designed to work with `baoyu-image-gen` for final rendering.
-- `auto-research` is for tasks with a cheap, objective evaluation loop. If the metric is noisy or subjective, it is the wrong tool.
-- `cli-agents` requires the target CLI tool to be installed and authenticated. Each invocation starts a fresh session — context is carried by the orchestrator, not retained by the agent.
-- `piclist-image-hosting` requires the PicList App running locally (HTTP API on `127.0.0.1:36677`) with an image host already configured. No additional API keys or `.env` needed in this repo.
-
-### Hooks
+## Hooks
 
 | Hook | Event | Description |
 |------|-------|-------------|
-| **protect-files** | PreToolUse | Blocks edits to sensitive files (.env, credentials, keys, etc.). |
-| **notify-push** | Notification + Stop | Push notification with task context via HTTP webhook (Bark by default). Falls back to desktop notification. Set `NOTIFY_URL` env var to enable mobile push. |
-| **stop-guard** | Stop | Verifies task completion and checks if docs need updating before session ends. |
+| **agent-cli-context** | UserPromptSubmit | Reports whether Codex, OpenCode, and QoderCLI are installed for `agent-task` context. |
+| **protect-files** | PreToolUse | Blocks edits to sensitive files such as `.env`, credentials, and keys. |
+| **notify-push** | Notification + Stop | Sends task-context notifications via webhook, with desktop notification fallback. Set `NOTIFY_URL` to enable mobile push. |
+| **stop-guard** | Stop | Checks task completion and whether docs need updates before the session ends. |
 
-## Project Structure
+## Verification and local development
 
+Use the verifier script:
+
+```bash
+# Static validation + runtime smoke tests
+scripts/verify-plugin.sh
+
+# End-to-end validation: create a temporary local marketplace, install the plugin,
+# inspect the installed cache, run runtime checks, then clean up
+scripts/verify-plugin.sh --e2e
 ```
+
+The script runs:
+
+- `claude plugin validate .`
+- `claude plugin validate plugins/work-toolkit`
+- required skill, hook, and bridge runtime file checks
+- removal check for the old `cli-agents` directory
+- bridge `--task list` and `--task health` smoke checks
+- `agent-cli-context.sh` hook smoke check
+- stale `cli-agents` reference scan
+- in `--e2e` mode: temporary local marketplace creation, `claude plugin install --scope local`, installed-cache validation, and automatic cleanup
+
+## Project structure
+
+```text
 ├── .claude-plugin/
 │   └── marketplace.json      Marketplace manifest
 ├── plugins/
 │   └── work-toolkit/         Main plugin
 │       ├── .claude-plugin/
 │       │   └── plugin.json   Plugin manifest
-│       ├── skills/           Skill definitions (one per directory)
+│       ├── skills/           Skill definitions
 │       ├── hooks/            Hook scripts
 │       ├── commands/         Slash commands
 │       ├── agents/           Subagent definitions
 │       └── rules/            Shared rules
+├── scripts/
+│   └── verify-plugin.sh      Local and E2E verifier
 ├── CLAUDE.md
 ├── README.md
 └── LICENSE
