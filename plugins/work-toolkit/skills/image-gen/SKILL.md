@@ -42,16 +42,33 @@ On first invocation, ensure the environment is ready:
 
 ## Provider Architecture
 
-The skill uses a single **OpenAI-compatible abstraction layer**. Any API that implements the OpenAI chat completions format with image output works out of the box:
+The skill auto-detects the model type and routes to the correct API:
+
+| Model Pattern | API Used | Endpoint |
+|---------------|----------|----------|
+| `gpt-image-*`, `chatgpt-image-*` | OpenAI Images API | `/images/generations` or `/images/edits` |
+| Everything else (Gemini, Nano Banana, etc.) | Chat Completions | `/chat/completions` with `modalities=["image","text"]` |
+
+Detection is based on the **bare model name** (provider prefix like `openai/` is stripped for native `api.openai.com` only; routers keep the full name).
+
+Supported endpoints:
 
 | Endpoint | Example BASE_URL |
 |----------|-----------------|
 | OpenRouter | `https://openrouter.ai/api/v1` |
 | Google AI Studio (OpenAI compat) | `https://generativelanguage.googleapis.com/v1beta/openai` |
+| OpenAI native | `https://api.openai.com/v1` |
 | Custom proxy / self-hosted | `https://your-proxy.example.com/v1` |
 | Any NewAPI instance | `https://your-newapi.example.com/v1` |
 
 To switch provider, just change `IMAGE_GEN_BASE_URL` and `IMAGE_GEN_API_KEY`. No code changes needed.
+
+### GPT Image 2 specifics
+
+- Text-to-image uses `/images/generations` (JSON payload)
+- Reference/edit images use `/images/edits` (multipart form upload, streams rebuilt per retry)
+- Aspect ratio → size: `1:1` → `1024x1024`, `16:9`/`4:3`/`3:2` → `1536x1024`, `9:16`/`3:4`/`2:3` → `1024x1536`
+- Resolution → quality: `1K` → `auto`, `2K`/`4K` → `high`
 
 ## Usage
 
@@ -141,6 +158,28 @@ No limit on reference image count. More references give the model richer context
 ## User Configuration
 
 When the user provides API key, base URL, or model name in conversation, write them to `{baseDir}/.env`. If `.env` already exists, read it first and only update the mentioned fields.
+
+## Prompt Cookbooks
+
+Model-specific prompt examples and best practices are in the `references/` directory. Read the relevant cookbook when crafting prompts — each model family has different strengths:
+
+| Model Family | Cookbook | Best For |
+|-------------|---------|----------|
+| GPT Image 2 (`gpt-image-2`) | [`references/gpt-image-prompts.md`](references/gpt-image-prompts.md) | Text rendering, photorealism, product shots, infographics, character consistency |
+| Gemini / Nano Banana (`gemini-*`, `nano-banana-*`) | [`references/gemini-prompts.md`](references/gemini-prompts.md) | Style transfer, reference-based editing, illustration, CJK prompts |
+
+When the user's request is vague, consult the cookbook for the active model to pick a prompt structure that plays to its strengths. When switching models, re-read the relevant cookbook — prompt style that works for Gemini may not be optimal for GPT Image and vice versa.
+
+### Quick model selection guide
+
+| Need | Recommended Model | Why |
+|------|------------------|-----|
+| Readable text on images | `gpt-image-2` | Best text rendering in the industry |
+| Photorealistic product shots | `gpt-image-2` | Strong photorealism and lighting control |
+| Style transfer from reference | Gemini (`--ref`) | Multimodal chat with inline images |
+| Character consistency across scenes | Gemini with `--ref` | Maintains IP from reference images |
+| Chinese/Japanese art styles | Gemini | Native CJK understanding |
+| Quick iteration / previews | `gemini-3.1-flash-image-preview` | Fast and cheap |
 
 ## After Generation
 
