@@ -24,9 +24,9 @@ satisfied.
 
 Workers and Critic are either:
 - **Native Claude sub-agents** (via the `Agent` tool) — default, simplest
-- **External CLI agents** (Codex, Gemini CLI, Claude CLI, OpenCode) via the `cli-agents` skill
+- **External CLI agents** (Codex, OpenCode, QoderCLI) via the `agent-task` skill / Agent Bridge
 
-Use CLI agents when the user explicitly specifies one ("用 Codex 来跑", "让 Gemini 评审").
+Use external CLI agents when the user explicitly specifies one ("用 Codex 来跑", "让 OpenCode 评审").
 Otherwise, use Claude sub-agents or evaluate directly — no extra process needed.
 
 ## When to use
@@ -42,8 +42,8 @@ Otherwise, use Claude sub-agents or evaluate directly — no extra process neede
 ```
 You (Orchestrator)
     │
-    ├── Worker 1 [native sub-agent or CLI exec] → output A  ┐
-    ├── Worker 2 [native sub-agent or CLI exec] → output B  ┘ (parallel)
+    ├── Worker 1 [native sub-agent or Agent Bridge] → output A  ┐
+    ├── Worker 2 [native sub-agent or Agent Bridge] → output B  ┘ (parallel)
     │
     └── Critic [self-evaluate or separate agent/model]
               ↓
@@ -54,12 +54,12 @@ You (Orchestrator)
 (e.g., Agent tool in Claude Code, sub-session in Codex). Output is returned
 directly — no files, no polling.
 
-**CLI exec**: run any AI CLI tool via `codex exec`, `gemini -p`, `claude -p`, etc.
-Output goes to a file; orchestrator reads it after the process exits.
-
-Keep process files separate from deliverables. Worker drafts, prompts, critic
-verdicts, and feedback notes should live in a dedicated run directory. Only the
-final accepted deliverable should be written to the user-facing destination.
+**Agent Bridge**: use `agent-task` to delegate to Codex, OpenCode, or QoderCLI.
+The bridge handles CLI invocation and returns the external agent result. Keep any
+process artifacts separate from deliverables. Worker drafts, prompts, critic
+verdicts, and feedback notes should live in a dedicated run directory when the
+loop needs intermediate files. Only the final accepted deliverable should be
+written to the user-facing destination.
 
 You own the loop. Workers execute; Critic evaluates; you bridge feedback between them.
 
@@ -103,31 +103,28 @@ Sub-agent call:
 For parallel workers, spawn multiple sub-agent calls simultaneously. Each
 result arrives as the corresponding sub-agent completes.
 
-### Option B — External CLI agents (when user specifies: "用 Codex", "让 Gemini 跑")
+### Option B — External CLI agents (when user specifies: "用 Codex", "让 OpenCode 跑")
 
-Use the `cli-agents` skill pattern. Write the prompt to a temp file, invoke the CLI tool,
-read the output file.
+Use the `agent-task` skill to delegate the worker pass through Agent Bridge.
+Pass the worker prompt as the task text and pin an agent when the user requested
+one. For multiple external agents, use `--agents` so the bridge can run the same
+task across agents and return comparable results.
 
 ```bash
-RUN_DIR=$(mktemp -d /tmp/critic-loop-run-XXXXXX)
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" \
+  "Your task: <specific subtask>. Requirements: <...>. Return your complete output." \
+  --agent codex > "$RUN_DIR/w1-output.md"
 
-cat > "$RUN_DIR/w1-prompt.txt" << EOF
-Your task: <specific subtask>
-Requirements: <...>
-Save output to $RUN_DIR/w1-output.md when complete.
-Treat that file as a working draft, not the final user delivery artifact.
-EOF
-
-codex exec --full-auto -C /path/to/worker-1-worktree "$(cat "$RUN_DIR/w1-prompt.txt")"
-# run_in_background: true  ← for parallel workers
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" \
+  "Your task: <specific subtask>. Requirements: <...>. Return your complete output." \
+  --agents codex,opencode > "$RUN_DIR/workers-output.md"
 ```
 
-For code-producing parallel workers, give each CLI agent its own worktree or
-isolated checkout. See `cli-agents` skill for Codex, Gemini CLI, Claude CLI,
-and OpenCode syntax.
+For code-producing parallel workers, give each external agent an isolated
+worktree or clearly bounded scope before delegating.
 
-Independent workers run in parallel (background calls); sequential workers run one after
-another (synchronous calls).
+Independent workers run in parallel when the bridge supports multi-agent execution;
+sequential workers run one after another.
 
 ## Phase 2: Prepare the Critic
 
@@ -135,9 +132,9 @@ The Critic is:
 
 - **Self-evaluation** (default): after workers finish, evaluate output directly
   using the rubric. No extra agent needed. Skip the template below.
-- **A separate CLI agent** (when user specifies: "用 Codex 评审", "让 Gemini 来判断"):
-  run `codex exec` / `gemini` with the critic prompt. This provides the strongest
-  evaluator independence (different model, different context entirely).
+- **A separate external CLI agent** (when user specifies: "用 Codex 评审", "让 OpenCode 来判断"):
+  use `agent-task` with `review` or `adversarial-review`, pinned to the requested agent.
+  This provides strong evaluator independence (different tool, different context entirely).
 
 For the CLI agent path, prepare the critic prompt template in advance:
 
@@ -202,7 +199,11 @@ EOF
 # Append worker outputs by file reference in the prompt, or tell the agent to read them:
 # "Read $RUN_DIR/w1-output.md and $RUN_DIR/w2-output.md, then evaluate against the rubric."
 
-codex exec --full-auto -o "$RUN_DIR/verdict.txt" "$(cat "$RUN_DIR/critic-prompt.txt")"
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" \
+  --task adversarial-review \
+  --agent codex \
+  --prompt-file "$RUN_DIR/critic-prompt.txt" \
+  > "$RUN_DIR/verdict.txt"
 cat "$RUN_DIR/verdict.txt"
 ```
 
@@ -225,8 +226,9 @@ cat > "$RUN_DIR/w1-feedback.txt" << 'EOF'
 EOF
 
 # Tell the worker to read its own previous output and the feedback
-codex exec --full-auto -C /path/to/workdir \
-  "Read $RUN_DIR/w1-output.md (your previous draft) and $RUN_DIR/w1-feedback.txt (what needs to change). Revise the draft to address all feedback. Preserve everything that already works. Overwrite $RUN_DIR/w1-output.md when done."
+node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" \
+  "Read $RUN_DIR/w1-output.md (your previous draft) and $RUN_DIR/w1-feedback.txt (what needs to change). Revise the draft to address all feedback. Preserve everything that already works. Overwrite $RUN_DIR/w1-output.md when done." \
+  --agent codex > "$RUN_DIR/w1-revision.log"
 ```
 
 Then repeat Phase 3 (collect + evaluate) for the revised output.
@@ -238,7 +240,7 @@ Then repeat Phase 3 (collect + evaluate) for the revised output.
 | Critic returns `VERDICT: PASS` | Proceed to Phase 5 |
 | Max iterations reached (default: 3) | Report to user; ask whether to continue or accept current best |
 | Same criterion fails 2+ consecutive rounds | Escalate — likely a scope or rubric mismatch |
-| Worker output file missing or empty | Check CLI agent exit code; re-run or escalate |
+| Worker result missing or empty | Check the Agent Bridge output and requested agent availability; re-run or escalate |
 
 ## Phase 5: Deliver
 
@@ -279,7 +281,7 @@ criticism into specific, actionable directives. Workers should feel instructed, 
 feedback. Do not scatter process files through the project root. Only publish
 the final accepted artifact to the destination the user asked for.
 
-**Carry context explicitly.** Neither CLI agents nor native sub-agents retain state between
+**Carry context explicitly.** Neither external CLI agents nor native sub-agents retain state between
 calls. Always inject the previous output into revision prompts.
 
 **Escalate early.** Two consecutive rounds with the same failing criterion → it's a scope

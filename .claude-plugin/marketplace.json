@@ -3,6 +3,9 @@
   "owner": {
     "name": "zhangtyzzz"
   },
+  "metadata": {
+    "description": "Curated Claude Code marketplace with production-ready skills, hooks, rules, and agents for engineering, content, image, and multi-agent workflows"
+  },
   "plugins": [
     {
       "name": "work-toolkit",
