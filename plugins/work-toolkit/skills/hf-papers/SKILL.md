@@ -13,7 +13,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "python3 \"${CLAUDE_SKILL_DIR}/scripts/ensure_hf_cli.py\""
+          command: "_R=\"${CLAUDE_SKILL_DIR}\"; [ -z \"$_R\" ] && _R=\"$(dirname \"$(readlink -f \"$0\")\")\"; python3 \"$_R/scripts/ensure_hf_cli.py\""
 ---
 
 # HF Papers — Search & Read Academic Papers
