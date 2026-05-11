@@ -33,12 +33,14 @@ On first invocation, ensure the environment is ready:
    {baseDir}/.venv/bin/pip install -r {baseDir}/requirements.txt
    ```
 
-2. Check if `{baseDir}/.env` exists. If not, ask the user for:
+2. Check if environment variables are already set (e.g. via Claude Code `settings.json` `env` field or `~/.cc-best-config/.env`). If not, ask the user for:
    - **IMAGE_GEN_API_KEY** (required): API key for the endpoint
    - **IMAGE_GEN_BASE_URL** (required): Base URL of the OpenAI-compatible endpoint
    - **IMAGE_GEN_MODEL** (optional): model name, defaults to `google/gemini-3-1-flash-image-preview`
 
-   Write to `{baseDir}/.env`. Only show the first 8 chars of the API key when confirming.
+   Write to `~/.cc-best-config/.env` (persistent across plugin updates). Only show the first 8 chars of the API key when confirming.
+
+   Env load priority: `process.env` (settings.json) > `{baseDir}/.env` > `<cwd>/.env` > `~/.cc-best-config/.env`. Earlier sources take precedence.
 
 ## Provider Architecture
 
@@ -153,11 +155,11 @@ No limit on reference image count. More references give the model richer context
 | `IMAGE_GEN_MODEL` | Model name (default: `google/gemini-3-1-flash-image-preview`) |
 | `IMAGE_GEN_FACE_URL` | Default face image URL |
 
-**Load Priority**: CLI args > `.env` in skill directory > environment variables
+**Load Priority**: `process.env` (settings.json) > `{baseDir}/.env` > `<cwd>/.env` > `~/.cc-best-config/.env`. Earlier sources take precedence.
 
 ## User Configuration
 
-When the user provides API key, base URL, or model name in conversation, write them to `{baseDir}/.env`. If `.env` already exists, read it first and only update the mentioned fields.
+When the user provides API key, base URL, or model name in conversation, write them to `~/.cc-best-config/.env`. If the file already exists, read it first and only update the mentioned fields. Create `~/.cc-best-config/` if it does not exist.
 
 ## Prompt Cookbooks
 
@@ -187,6 +189,6 @@ Always use `--json` for structured output. After a successful generation, show t
 
 ## Error Handling
 
-- Missing API key → error with setup instructions pointing to `.env`
+- Missing API key → error with setup instructions pointing to `~/.cc-best-config/.env`
 - Generation failure → show error message from API
 - Local file not found → clear error with the path that failed
