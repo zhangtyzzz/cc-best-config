@@ -20,16 +20,18 @@ from pathlib import Path
 # Ensure adapters package is importable regardless of CWD
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Load .env before anything else
+# Load .env — later files do NOT override earlier ones or existing env vars.
+# Priority: process.env (settings.json) > skill dir .env > ~/.cc-best-config/.env
 try:
     from dotenv import load_dotenv
-    skill_env = Path(__file__).parent.parent / ".env"
-    if skill_env.exists():
-        load_dotenv(skill_env)
-    else:
-        cwd_env = Path.cwd() / ".env"
-        if cwd_env.exists():
-            load_dotenv(cwd_env)
+    _env_candidates = [
+        Path(__file__).parent.parent / ".env",       # skill directory
+        Path.cwd() / ".env",                          # current working directory
+        Path.home() / ".cc-best-config" / ".env",     # user-level persistent config
+    ]
+    for _env_path in _env_candidates:
+        if _env_path.exists():
+            load_dotenv(_env_path, override=False)
 except ImportError:
     pass
 
@@ -74,7 +76,7 @@ Examples:
 
     api_key = args.api_key or config["api_key"]
     if not api_key:
-        env_file = Path(__file__).parent.parent / ".env"
+        env_file = Path.home() / ".cc-best-config" / ".env"
         print(json.dumps({
             "success": False, "error": "Missing API key",
             "hint": f"Set IMAGE_GEN_API_KEY in {env_file} or pass --api-key",
