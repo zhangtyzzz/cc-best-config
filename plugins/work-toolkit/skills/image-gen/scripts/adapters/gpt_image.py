@@ -57,7 +57,7 @@ def _generate(
     """Text-to-image via /images/generations."""
     payload: Dict[str, Any] = {
         "model": api_model, "prompt": prompt, "n": 1,
-        "size": size, "quality": quality,
+        "size": size, "quality": quality, "output_format": "jpeg",
     }
     return request_with_retry(
         requests.post, url,
@@ -85,7 +85,7 @@ def _edit(
 
     form = {
         "prompt": prompt, "model": api_model,
-        "size": size, "quality": quality,
+        "size": size, "quality": quality, "output_format": "jpeg",
     }
     max_attempts = 2
     resp = None

@@ -37,8 +37,6 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **skill-creator** — 创建、修改、优化 skills，支持 eval 测试和性能基准分析
 - **excalidraw-diagram-generator** — 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）
 - **auto-research** — 面向可量化目标的自动迭代优化。主 agent 是监督者，必须核验 stop condition；如果子 agent 没达标就停下，主 agent 需要继续驱动它或重启新的 worker
-- **baoyu-article-illustrator** — 面向文章配图的工作流技能，先分析结构和配图位置，再用 Type × Style 模型产出一致风格的插图
-- **baoyu-image-gen** — 基于多家图像 API 的图片生成技能，支持参考图、比例控制、批量生成和基于保存 prompt 文件的稳定执行
 - **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
 - **agent-task** — 通过内置 Agent Bridge 将任务委托给外部 CLI 编码 Agent。支持 Codex、OpenCode、QoderCLI，可用于代码评审、对抗式评审、代码解释、通用任务委托和多 Agent 结果对比
