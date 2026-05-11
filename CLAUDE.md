@@ -115,7 +115,7 @@ flowchart TD
 
 - **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
 - **notify-push** — 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback（Notification + Stop）。设置 `NOTIFY_URL` 环境变量启用移动端推送
-- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 及 HF CLI 是否可用，供 agent-task 和 hf-papers 参考；缺失工具不阻塞提示
+- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 是否可用，供 agent-task 委托任务时参考；缺失工具不阻塞提示
 - **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
 
 ## 安装
