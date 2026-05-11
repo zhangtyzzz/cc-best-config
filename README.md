@@ -10,7 +10,7 @@ A curated Claude Code marketplace for day-to-day engineering, content work, imag
 - **Right-sized engineering process**: `pragmatic-engineering` matches workflow depth to task complexity.
 - **Quality loops**: `critic-loop` uses Worker + Critic passes with explicit rubrics for important deliverables.
 - **Metric-driven iteration**: `auto-research` keeps improving measurable targets until a verified stop condition is reached.
-- **Content and media workflows**: article illustration, image generation, Excalidraw diagrams, and Markdown image hosting.
+- **Content and media workflows**: image generation, Excalidraw diagrams, and Markdown image hosting.
 
 ## Install
 
@@ -99,8 +99,6 @@ It only runs fast `command -v` checks. It does not log in, mutate config, or blo
 | **frontend-design** | Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. |
 | **skill-creator** | Create, modify, benchmark, and optimize skills. |
 | **excalidraw-diagram-generator** | Generate Excalidraw flowcharts, architecture diagrams, mind maps, and related visuals from natural language. |
-| **baoyu-article-illustrator** | Analyze article structure and generate consistent illustrations with a Type × Style workflow. |
-| **baoyu-image-gen** | Generate images through multiple providers, with reference images, aspect ratios, batch mode, and saved prompt files. |
 | **image-gen** | Universal OpenAI-compatible image generation with references, local file base64, face editing, aspect ratio, and resolution controls. |
 | **piclist-image-hosting** | Upload local Markdown images through PicList and replace local paths with public URLs. |
 

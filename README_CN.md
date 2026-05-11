@@ -10,7 +10,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发开箱即用的 s
 - **工程流程分级**：`pragmatic-engineering` 会按任务复杂度决定直接执行、先规划、还是组织子 Agent。
 - **质量循环**：`critic-loop` 使用 Worker + Critic 模式，让重要输出经过明确 rubric 评估和修订。
 - **自动迭代优化**：`auto-research` 面向可量化目标持续实验，主 Agent 必须监督 stop condition。
-- **内容与图片工作流**：包含文章配图、通用图像生成、Excalidraw 图表、本地图片转图床等技能。
+- **内容与图片工作流**：包含通用图像生成、Excalidraw 图表、本地图片转图床等技能。
 
 ## 安装
 
@@ -99,8 +99,6 @@ Available external CLI agents: codex,opencode,qodercli. Missing: none.
 | **frontend-design** | 创建高质量、生产级前端界面，避免通用 AI 风格。 |
 | **skill-creator** | 创建、修改、优化 skills，支持 eval 测试和性能基准分析。 |
 | **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表：流程图、架构图、思维导图等。 |
-| **baoyu-article-illustrator** | 分析文章结构和配图位置，用 Type × Style 工作流生成风格一致的插图。 |
-| **baoyu-image-gen** | 通过多家图像 API 生成图片，支持参考图、比例控制、批量生成和保存 prompt 文件稳定执行。 |
 | **image-gen** | 通用 AI 图像生成，支持 OpenAI-compatible API、参考图、本地文件 base64、face 编辑、比例和分辨率控制。 |
 | **piclist-image-hosting** | 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，并替换为在线 URL。 |
 

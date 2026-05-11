@@ -1,24 +1,24 @@
-# CLAUDE.md
+# AGENTS.md
 
-Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, rules, agents。
+Codex 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, rules, agents。
 
 ## 项目结构
 
-本仓库是一个 Claude Code **marketplace**，包含一个或多个 plugin。
+本仓库是一个 Codex **marketplace**，包含一个或多个 plugin。
 
 ```
-├── .claude-plugin/
+├── .Codex-plugin/
 │   └── marketplace.json      — Marketplace 清单
 ├── plugins/
 │   └── work-toolkit/         — 主插件
-│       ├── .claude-plugin/
+│       ├── .Codex-plugin/
 │       │   └── plugin.json   — 插件清单
 │       ├── skills/           — 技能定义
 │       ├── hooks/            — 钩子脚本
 │       ├── commands/         — 斜杠命令
 │       ├── agents/           — 子代理定义
 │       └── rules/            — 通用规则
-├── CLAUDE.md
+├── AGENTS.md
 ├── README.md
 └── LICENSE
 ```
@@ -63,14 +63,14 @@ flowchart TD
 
 1. **开发实现**
    - 明确变更属于新增 skill、替换/删除公开 skill、hook 变更、文档变更还是 runtime 变更。
-   - 涉及公开能力变化时，同步更新 `README.md`、`README_CN.md`、`CLAUDE.md`。
-   - 每次发布型变更必须 bump `plugins/work-toolkit/.claude-plugin/plugin.json` 的 `version`。
+   - 涉及公开能力变化时，同步更新 `README.md`、`README_CN.md`、`AGENTS.md`。
+   - 每次发布型变更必须 bump `plugins/work-toolkit/.Codex-plugin/plugin.json` 的 `version`。
 
 2. **本地脚本 + 端到端测试**
    - 先运行 `scripts/verify-plugin.sh`。
    - 再运行 `scripts/verify-plugin.sh --e2e`。
-   - 脚本必须覆盖 `claude plugin validate .`、`claude plugin validate plugins/work-toolkit`、关键文件存在性、runtime smoke test、hook smoke test、旧引用检查。
-   - 端到端验证必须通过临时 local marketplace 执行 `claude plugin install --scope local`，并检查安装缓存中的 skill、hook、runtime 文件，而不是只验证源码目录。
+   - 脚本必须覆盖 `Codex plugin validate .`、`Codex plugin validate plugins/work-toolkit`、关键文件存在性、runtime smoke test、hook smoke test、旧引用检查。
+   - 端到端验证必须通过临时 local marketplace 执行 `Codex plugin install --scope local`，并检查安装缓存中的 skill、hook、runtime 文件，而不是只验证源码目录。
    - 不允许忽略 validator warning；能修就修，不能修必须在结果中说明原因。
    - 变更涉及 `agent-task` / Agent Bridge 时，还要至少跑一次真实 bridge task；如果支持多个外部 CLI，逐个说明哪些真实可用、哪些因本机认证或模型配置失败。
 
@@ -96,13 +96,13 @@ flowchart TD
 
 ## 版本管理
 
-插件版本号在 `plugins/work-toolkit/.claude-plugin/plugin.json` 的 `version` 字段中维护，遵循 [semver](https://semver.org/) 规范：
+插件版本号在 `plugins/work-toolkit/.Codex-plugin/plugin.json` 的 `version` 字段中维护，遵循 [semver](https://semver.org/) 规范：
 
 - **patch**（0.2.0 → 0.2.1）：bug 修复、模板微调、文档修正
 - **minor**（0.2.0 → 0.3.0）：新增 skill、现有 skill 功能增强、新增 hook
 - **major**（0.x → 1.0）：破坏性变更、大规模重构
 
-**每次发布更新时必须 bump 版本号。** Claude Code 通过版本号判断是否需要更新插件——如果改了代码但没 bump 版本号，用户不会收到更新（缓存机制）。用户可通过 `claude plugin update work-toolkit@cc-best-config` 拉取新版本，再执行 `/reload-plugins` 生效。注意：第三方 marketplace 的 auto-update 默认关闭，用户需在 `/plugin` 管理界面手动开启。
+**每次发布更新时必须 bump 版本号。** Codex 通过版本号判断是否需要更新插件——如果改了代码但没 bump 版本号，用户不会收到更新（缓存机制）。用户可通过 `Codex plugin update work-toolkit@cc-best-config` 拉取新版本，再执行 `/reload-plugins` 生效。注意：第三方 marketplace 的 auto-update 默认关闭，用户需在 `/plugin` 管理界面手动开启。
 
 ## 文档同步约定
 
@@ -121,8 +121,8 @@ flowchart TD
 
 ```bash
 # 1. 添加 marketplace
-claude plugin marketplace add zhangtyzzz/cc-best-config
+Codex plugin marketplace add zhangtyzzz/cc-best-config
 
 # 2. 安装插件
-claude plugin install work-toolkit
+Codex plugin install work-toolkit
 ```

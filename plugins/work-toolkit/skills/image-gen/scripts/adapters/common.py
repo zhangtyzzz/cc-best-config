@@ -173,6 +173,21 @@ def save_image_file(data: bytes, output_dir: str, index: int,
     return {"local_path": str(fp.absolute())}
 
 
+def _detect_ext_from_bytes(data: bytes) -> str:
+    """Detect image format from magic bytes."""
+    if data[:3] == b'\xff\xd8\xff':
+        return ".jpg"
+    if data[:8] == b'\x89PNG\r\n\x1a\n':
+        return ".png"
+    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+        return ".webp"
+    if data[:3] == b'GIF':
+        return ".gif"
+    if data[:2] == b'BM':
+        return ".bmp"
+    return ".png"
+
+
 def save_b64(b64_or_dataurl: str, output_dir: str, index: int) -> Dict[str, str]:
     """Decode base64 (with or without data-url header) and save."""
     ext = ".png"
@@ -184,7 +199,10 @@ def save_b64(b64_or_dataurl: str, output_dir: str, index: int) -> Dict[str, str]
                    "webp": ".webp", "bmp": ".bmp"}.get(mime_ext, f".{mime_ext}")
     else:
         b64_data = b64_or_dataurl
-    return save_image_file(base64.b64decode(b64_data), output_dir, index, ext)
+    raw = base64.b64decode(b64_data)
+    if ext == ".png":
+        ext = _detect_ext_from_bytes(raw)
+    return save_image_file(raw, output_dir, index, ext)
 
 
 def download_and_save(url: str, output_dir: str, index: int) -> Dict[str, str]:
