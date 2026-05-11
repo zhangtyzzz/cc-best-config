@@ -100,6 +100,7 @@ Available external CLI agents: codex,opencode,qodercli. Missing: none.
 | **skill-creator** | 创建、修改、优化 skills，支持 eval 测试和性能基准分析。 |
 | **excalidraw-diagram-generator** | 通过自然语言生成 Excalidraw 图表：流程图、架构图、思维导图等。 |
 | **image-gen** | 通用 AI 图像生成，支持 OpenAI-compatible API、参考图、本地文件 base64、face 编辑、比例和分辨率控制。 |
+| **hf-papers** | 通过 Hugging Face CLI 搜索、浏览和阅读学术论文，支持搜索、每日/趋势论文、论文详情和全文阅读。 |
 | **piclist-image-hosting** | 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，并替换为在线 URL。 |
 
 ## Hooks

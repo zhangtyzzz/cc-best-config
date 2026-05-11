@@ -39,6 +39,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **auto-research** — 面向可量化目标的自动迭代优化。主 agent 是监督者，必须核验 stop condition；如果子 agent 没达标就停下，主 agent 需要继续驱动它或重启新的 worker
 - **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
+- **hf-papers** — 通过 Hugging Face CLI 搜索、浏览和阅读学术论文，支持搜索、每日/趋势论文、论文详情和全文阅读
 - **agent-task** — 通过内置 Agent Bridge 将任务委托给外部 CLI 编码 Agent。支持 Codex、OpenCode、QoderCLI，可用于代码评审、对抗式评审、代码解释、通用任务委托和多 Agent 结果对比
 - **critic-loop** — 多 Agent 质量循环：N 个 Worker 执行子任务，一个 Critic 评估器按预定 rubric 评审产出；默认使用原生子 Agent，用户指定 Codex、OpenCode 或 QoderCLI 时走 Agent Bridge。适合用标准判断质量的场景（研究、文档、代码设计），而非数字指标场景（用 auto-research）
 - **piclist-image-hosting** — 将 Markdown 中的本地图片通过 PicList 上传到用户配置的图床，用在线 URL 替换本地路径。依赖本地运行的 PicList App，无需额外 API key 配置
@@ -114,7 +115,7 @@ flowchart TD
 
 - **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
 - **notify-push** — 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback（Notification + Stop）。设置 `NOTIFY_URL` 环境变量启用移动端推送
-- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 是否可用，供 agent-task 委托任务时参考；缺失工具不阻塞提示
+- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 及 HF CLI 是否可用，供 agent-task 和 hf-papers 参考；缺失工具不阻塞提示
 - **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
 
 ## 安装

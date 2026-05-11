@@ -100,6 +100,7 @@ It only runs fast `command -v` checks. It does not log in, mutate config, or blo
 | **skill-creator** | Create, modify, benchmark, and optimize skills. |
 | **excalidraw-diagram-generator** | Generate Excalidraw flowcharts, architecture diagrams, mind maps, and related visuals from natural language. |
 | **image-gen** | Universal OpenAI-compatible image generation with references, local file base64, face editing, aspect ratio, and resolution controls. |
+| **hf-papers** | Search, browse, and read academic papers via Hugging Face CLI. Supports search, daily/trending papers, paper info, and full-text reading. |
 | **piclist-image-hosting** | Upload local Markdown images through PicList and replace local paths with public URLs. |
 
 ## Hooks

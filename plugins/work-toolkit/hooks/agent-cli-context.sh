@@ -30,3 +30,10 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 
 printf 'Available external CLI agents: %s. Missing: %s.\n' "$available_text" "$missing_text"
+
+# Check for hf CLI (Hugging Face Hub) — used by hf-papers skill
+if command -v hf >/dev/null 2>&1; then
+  printf 'HF CLI: available (hf papers for paper search/read).\n'
+else
+  printf 'HF CLI: not installed. Install with: pip install -U "huggingface_hub[cli]"\n'
+fi
