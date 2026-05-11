@@ -8,25 +8,19 @@ description: |
   latest papers, paper info, hf papers.
   Do not use for downloading model weights, datasets, or non-paper HF Hub operations.
 version: 1.0.0
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "python3 \"${CLAUDE_SKILL_DIR}/scripts/ensure_hf_cli.py\""
 ---
 
 # HF Papers — Search & Read Academic Papers
 
 Search, browse, and read academic papers through the Hugging Face Hub CLI (`hf papers`).
 
-## Prerequisites — BLOCKING
-
-The `hf` CLI must be installed. Check with:
-
-```bash
-command -v hf
-```
-
-If not found, tell the user to install it:
-
-```bash
-pip install -U "huggingface_hub[cli]"
-```
+The `hf` CLI is checked and auto-installed via a PreToolUse hook — no manual action needed. Read the `additionalContext` injected by the hook to know the CLI status.
 
 ## Available Commands
 
@@ -81,7 +75,7 @@ hf papers read <paper_id>
 
 4. **Paper IDs** are arXiv IDs (e.g. `1706.03762`, `2601.15621`). When the user provides a full arXiv URL like `https://arxiv.org/abs/1706.03762`, extract just the ID part.
 
-5. **Error handling**: If `hf` is not installed, provide installation instructions. If a paper is not found, suggest checking the ID or searching by title.
+5. **Error handling**: If the PreToolUse hook reports `HF_CLI_READY=0`, relay the error to the user. If a paper is not found, suggest checking the ID or searching by title.
 
 ## Example Workflows
 
