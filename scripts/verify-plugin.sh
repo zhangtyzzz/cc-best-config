@@ -50,6 +50,9 @@ require_file "$BRIDGE_DIR/adapters/codex.js"
 require_file "$BRIDGE_DIR/adapters/opencode.js"
 require_file "$BRIDGE_DIR/adapters/qoder.js"
 require_file "$PLUGIN_DIR/hooks/agent-cli-context.sh"
+require_file "$PLUGIN_DIR/hooks/skill-prerun.sh"
+require_file "$PLUGIN_DIR/skills/hf-papers/scripts/ensure_hf_cli.py"
+require_file "$PLUGIN_DIR/skills/data-analysis/scripts/ensure_python_env.py"
 require_absent_dir "$PLUGIN_DIR/skills/cli-agents"
 
 log "Run vendored bridge smoke checks"
@@ -57,7 +60,32 @@ node "$BRIDGE_DIR/bridge.js" --task list >/dev/null
 node "$BRIDGE_DIR/bridge.js" --task health >/dev/null
 
 log "Run hook smoke check"
-"$PLUGIN_DIR/hooks/agent-cli-context.sh" >/dev/null
+# agent-cli-context.sh now expects to be invoked via skill-prerun.sh; calling
+# it directly should still emit valid JSON (no skill filtering at this layer).
+out=$("$PLUGIN_DIR/hooks/agent-cli-context.sh")
+echo "$out" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")); if (!d?.hookSpecificOutput?.additionalContext) process.exit(1);' || {
+  printf 'agent-cli-context.sh did not emit a valid hookSpecificOutput JSON: %s\n' "$out" >&2
+  exit 1
+}
+
+# skill-prerun.sh dispatcher: bare and namespaced names match; non-matching
+# stays silent; lookalike suffix ("not-agent-task") must NOT match.
+echo '{"tool_input":{"skill":"agent-task"}}' \
+  | "$PLUGIN_DIR/hooks/skill-prerun.sh" agent-task "$PLUGIN_DIR/hooks/agent-cli-context.sh" >/dev/null
+echo '{"tool_input":{"skill":"work-toolkit:agent-task"}}' \
+  | "$PLUGIN_DIR/hooks/skill-prerun.sh" agent-task "$PLUGIN_DIR/hooks/agent-cli-context.sh" >/dev/null
+out=$(echo '{"tool_input":{"skill":"work-toolkit:other"}}' \
+  | "$PLUGIN_DIR/hooks/skill-prerun.sh" agent-task "$PLUGIN_DIR/hooks/agent-cli-context.sh")
+if [[ -n "$out" ]]; then
+  printf 'skill-prerun.sh leaked output for non-matching skill: %s\n' "$out" >&2
+  exit 1
+fi
+out=$(echo '{"tool_input":{"skill":"not-agent-task"}}' \
+  | "$PLUGIN_DIR/hooks/skill-prerun.sh" agent-task "$PLUGIN_DIR/hooks/agent-cli-context.sh")
+if [[ -n "$out" ]]; then
+  printf 'skill-prerun.sh wrongly matched lookalike skill name: %s\n' "$out" >&2
+  exit 1
+fi
 
 log "Check stale cli-agents references"
 if command -v rg >/dev/null 2>&1; then
@@ -109,11 +137,16 @@ if [[ "$RUN_E2E" -eq 1 ]]; then
   require_file "$install_path/skills/agent-task/SKILL.md"
   require_file "$install_path/skills/agent-task/scripts/bridge/bridge.js"
   require_file "$install_path/hooks/agent-cli-context.sh"
+  require_file "$install_path/hooks/skill-prerun.sh"
+  require_file "$install_path/skills/hf-papers/scripts/ensure_hf_cli.py"
+  require_file "$install_path/skills/data-analysis/scripts/ensure_python_env.py"
   require_absent_dir "$install_path/skills/cli-agents"
 
   node "$install_path/skills/agent-task/scripts/bridge/bridge.js" --task list >/dev/null
   node "$install_path/skills/agent-task/scripts/bridge/bridge.js" --task health >/dev/null
   "$install_path/hooks/agent-cli-context.sh" >/dev/null
+  echo '{"tool_input":{"skill":"work-toolkit:agent-task"}}' \
+    | "$install_path/hooks/skill-prerun.sh" agent-task "$install_path/hooks/agent-cli-context.sh" >/dev/null
 fi
 
 log "Verification passed"

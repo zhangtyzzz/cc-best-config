@@ -79,13 +79,22 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task e
 
 ### CLI availability context
 
-A lightweight `UserPromptSubmit` hook reports which supported CLIs are installed:
+A `PreToolUse` hook with `matcher: "Skill"` reports which supported CLIs are
+installed, but only when the `agent-task` skill is being launched:
 
 ```text
 Available external CLI agents: codex,opencode,qodercli. Missing: none.
 ```
 
-It only runs fast `command -v` checks. It does not log in, mutate config, or block prompts when a CLI is missing.
+It runs only fast `command -v` checks and never blocks the prompt or skill. The
+context is delivered to the model via `hookSpecificOutput.additionalContext`.
+
+> The dispatcher script `hooks/skill-prerun.sh` filters `tool_input.skill` so the
+> hook stays silent for any skill other than `agent-task`. The same dispatcher
+> wires `hf-papers` and `data-analysis` skill hooks. The previous frontmatter
+> hook approach (`SKILL.md` `hooks:` block) does not fire on current Claude Code
+> ([#39468](https://github.com/anthropics/claude-code/issues/39468)) and was
+> replaced.
 
 ## Skills
 
@@ -107,8 +116,10 @@ It only runs fast `command -v` checks. It does not log in, mutate config, or blo
 
 | Hook | Event | Description |
 |------|-------|-------------|
-| **agent-cli-context** | UserPromptSubmit | Reports whether Codex, OpenCode, and QoderCLI are installed for `agent-task` context. |
-| **protect-files** | PreToolUse | Blocks edits to sensitive files such as `.env`, credentials, and keys. |
+| **agent-cli-context** | PreToolUse (matcher: `Skill`) | Reports whether Codex, OpenCode, and QoderCLI are installed. Fires only when the `agent-task` skill is launched, via the `skill-prerun.sh` dispatcher. |
+| **ensure-hf-cli** | PreToolUse (matcher: `Skill`) | Auto-installs `huggingface_hub[cli]` when the `hf-papers` skill is launched. Wired through `skill-prerun.sh`. |
+| **ensure-python-env** | PreToolUse (matcher: `Skill`) | Auto-installs pandas, matplotlib, seaborn into a project `.venv` when the `data-analysis` skill is launched. Wired through `skill-prerun.sh`. |
+| **protect-files** | PreToolUse (matcher: `Edit\|Write`) | Blocks edits to sensitive files such as `.env`, credentials, and keys. Always on. |
 | **notify-push** | Notification + Stop | Sends task-context notifications via webhook, with desktop notification fallback. Set `NOTIFY_URL` to enable mobile push. |
 | **stop-guard** | Stop | Checks task completion and whether docs need updates before the session ends. |
 

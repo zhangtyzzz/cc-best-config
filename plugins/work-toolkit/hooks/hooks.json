@@ -1,17 +1,24 @@
 {
-  "description": "Best-practice hooks: external CLI agent context, file protection, push + desktop notifications, and stop guard (task completion + doc check)",
+  "description": "Best-practice hooks: skill-scoped CLI agent context / hf CLI / python env (PreToolUse via Skill matcher), file protection, push + desktop notifications, and stop guard.",
   "hooks": {
-    "UserPromptSubmit": [
+    "PreToolUse": [
       {
+        "matcher": "Skill",
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/agent-cli-context.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/skill-prerun.sh agent-task ${CLAUDE_PLUGIN_ROOT}/hooks/agent-cli-context.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/skill-prerun.sh hf-papers python3 ${CLAUDE_PLUGIN_ROOT}/skills/hf-papers/scripts/ensure_hf_cli.py"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/skill-prerun.sh data-analysis python3 ${CLAUDE_PLUGIN_ROOT}/skills/data-analysis/scripts/ensure_python_env.py"
           }
         ]
-      }
-    ],
-    "PreToolUse": [
+      },
       {
         "matcher": "Edit|Write",
         "hooks": [

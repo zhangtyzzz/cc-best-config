@@ -8,12 +8,6 @@ description: |
   latest papers, paper info, hf papers.
   Do not use for downloading model weights, datasets, or non-paper HF Hub operations.
 version: 1.0.0
-hooks:
-  PreToolUse:
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "_R=\"${CLAUDE_SKILL_DIR}\"; [ -z \"$_R\" ] && _R=\"$(dirname \"$(readlink -f \"$0\")\")\"; python3 \"$_R/scripts/ensure_hf_cli.py\""
 ---
 
 # HF Papers — Search & Read Academic Papers
