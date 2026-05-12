@@ -95,7 +95,7 @@ Available external CLI agents: codex,opencode,qodercli. Missing: none.
 |------|------|
 | **agent-task** | 通过内置 Agent Bridge 委托外部 CLI Agent。支持 Codex、OpenCode、QoderCLI，可用于代码评审、对抗式评审、代码解释、通用任务委托和多 Agent 对比。 |
 | **critic-loop** | 多 Agent 质量循环：Worker 产出，Critic 按 rubric 评审并驱动修订。默认使用原生子 Agent，用户指定 Codex/OpenCode/QoderCLI 时走 Agent Bridge。 |
-| **auto-research** | 面向可量化目标的自动迭代优化。主 Agent 负责监督，必须核验 stop condition，未达标就继续推进或重启 worker。 |
+| **auto-research** | 面向可量化目标的自动迭代优化。运行前强制要求填写五项 Goal Contract（artifact / verification command / write scope / stop signal / pause condition）；主 Agent 负责监督，必须核验 stop signal 才能宣告 COMPLETE，迭代上限 / 阻塞 / 资源耗尽等情况报为 PAUSED。 |
 | **pragmatic-engineering** | 分级工程纪律，按任务复杂度自动选择 L0 直接执行、L1 简要检查、L2 规划、L3 子 Agent 编排。 |
 | **data-analysis** | 分析 CSV、Excel、数据库结果和业务指标，使用 Python 生成证据充分的报告。 |
 | **frontend-design** | 创建高质量、生产级前端界面，避免通用 AI 风格。 |
