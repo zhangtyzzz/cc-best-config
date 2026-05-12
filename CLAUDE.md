@@ -36,7 +36,7 @@ Claude Code 最佳配置集合 — 以 marketplace 形式分发 skills, hooks, r
 - **frontend-design** — 创建高质量、生产级前端界面，避免通用 AI 风格
 - **skill-creator** — 创建、修改、优化 skills，支持 eval 测试和性能基准分析
 - **excalidraw-diagram-generator** — 通过自然语言生成 Excalidraw 图表（流程图、架构图、思维导图等）
-- **auto-research** — 面向可量化目标的自动迭代优化。主 agent 是监督者，必须核验 stop condition；如果子 agent 没达标就停下，主 agent 需要继续驱动它或重启新的 worker
+- **auto-research** — 面向可量化目标的自动迭代优化。运行前强制要求填写五项 Goal Contract（measurable artifact / verification command / allowed write scope / stop signal / pause condition），缺项就拒跑；主 agent 是监督者，必须核验 stop signal 才能宣告 COMPLETE，迭代上限 / 阻塞 / 资源耗尽报为 PAUSED 而非 COMPLETE。Goal Contract 思路借鉴 OpenAI Codex `/goal` 实践。
 - **pragmatic-engineering** — 分级工程纪律，按任务复杂度自动匹配流程深度（L0 直接执行 → L3 子代理编排），避免简单任务被重流程拖慢
 - **image-gen** — 通用 AI 图像生成，通过 OpenAI-compatible API 抽象层接入任意端点。支持参考图工作流（给一张或多张参考图保持风格/IP 一致性）、本地文件自动 base64、face 编辑、比例和分辨率控制
 - **hf-papers** — 通过 Hugging Face CLI 搜索、浏览和阅读学术论文，支持搜索、每日/趋势论文、论文详情和全文阅读

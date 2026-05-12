@@ -102,7 +102,7 @@ context is delivered to the model via `hookSpecificOutput.additionalContext`.
 |-------|-------------|
 | **agent-task** | Delegate work to external CLI agents through the built-in Agent Bridge. Supports Codex, OpenCode, and QoderCLI for review, adversarial review, explanation, generic task delegation, and multi-agent comparison. |
 | **critic-loop** | Worker + Critic quality loop. Native sub-agents are the default; when the user requests Codex/OpenCode/QoderCLI, it uses Agent Bridge. |
-| **auto-research** | Autonomous improvement loop for measurable targets. The main agent supervises and must verify the stop condition before ending. |
+| **auto-research** | Autonomous improvement loop for measurable targets. Enforces a five-item Goal Contract (artifact / verification command / write scope / stop signal / pause condition) before the loop runs; the main agent supervises and must verify the stop signal before declaring success (caps and blockers report as PAUSED, not COMPLETE). |
 | **pragmatic-engineering** | Graded engineering discipline that chooses direct execution, lightweight review, planning, or sub-agent orchestration based on task complexity. |
 | **data-analysis** | Analyze CSV, Excel, database outputs, KPIs, and other tabular data with Python-backed reports. |
 | **frontend-design** | Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. |
