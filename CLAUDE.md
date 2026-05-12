@@ -113,10 +113,14 @@ flowchart TD
 
 ## Hooks
 
-- **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse）
+- **agent-cli-context** — 报告 Codex/OpenCode/QoderCLI 是否安装。注册为 `PreToolUse` + matcher `Skill`，由 `skill-prerun.sh` 调度，**仅在 `agent-task` skill 触发时**通过 `hookSpecificOutput.additionalContext` 注入给模型
+- **ensure-hf-cli** — 仅在 `hf-papers` skill 触发时检查并自动安装 `huggingface_hub[cli]`，同样走 `skill-prerun.sh` 调度
+- **ensure-python-env** — 仅在 `data-analysis` skill 触发时检查并自动把 pandas/matplotlib/seaborn 装入项目 `.venv`，同样走 `skill-prerun.sh` 调度
+- **protect-files** — 阻止修改 .env、密钥、凭证等敏感文件（PreToolUse + matcher `Edit|Write`），始终生效
 - **notify-push** — 带任务上下文的推送通知，支持 Bark 等 webhook 推送 + 桌面通知 fallback（Notification + Stop）。设置 `NOTIFY_URL` 环境变量启用移动端推送
-- **agent-cli-context** — 在 UserPromptSubmit 时轻量提示 Codex、OpenCode、QoderCLI 是否可用，供 agent-task 委托任务时参考；缺失工具不阻塞提示
 - **stop-guard** — 会话结束前检查任务完成度 + 文档是否需要更新（Stop）
+
+> **关于 skill-scoped hook 的设计选择**：早期实现把 skill 级 hook 写在 `SKILL.md` frontmatter 的 `hooks:` 块里，但当前 Claude Code 不会触发这种 hook（[#39468](https://github.com/anthropics/claude-code/issues/39468)）。改为 `PreToolUse` + `matcher: "Skill"` + 调度脚本 `skill-prerun.sh` 后，hook 真正受 skill 名过滤、按 skill 生命周期触发。新增 skill 级 hook 时直接复用 `skill-prerun.sh <skill-suffix> <command...>` 模式即可。
 
 ## 安装
 

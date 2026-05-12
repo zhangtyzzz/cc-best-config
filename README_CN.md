@@ -79,13 +79,15 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/agent-task/scripts/bridge/bridge.js" --task e
 
 ### CLI 可用性提示
 
-插件带有轻量级 `UserPromptSubmit` hook：
+插件带有一个 `PreToolUse` hook（matcher: `Skill`），仅在 `agent-task` 技能被触发时才汇报已安装的外部 CLI：
 
 ```text
 Available external CLI agents: codex,opencode,qodercli. Missing: none.
 ```
 
-它只做快速 `command -v` 检查，不登录、不配置、不阻塞提示。缺失 CLI 只是上下文提醒。
+它只做快速 `command -v` 检查，不登录、不配置、不阻塞，结果通过 `hookSpecificOutput.additionalContext` 注入给模型。
+
+> 调度脚本 `hooks/skill-prerun.sh` 会读取 `tool_input.skill`，命中目标 skill 才执行真正的 hook，其他 skill 静默退出。同一个调度器还接管了 `hf-papers` 和 `data-analysis` 的 skill 级 hook。早期写在 `SKILL.md` frontmatter 里的 `hooks:` 块在当前 Claude Code 上不会触发（[#39468](https://github.com/anthropics/claude-code/issues/39468)），已统一迁移。
 
 ## Skills
 
@@ -107,8 +109,10 @@ Available external CLI agents: codex,opencode,qodercli. Missing: none.
 
 | Hook | Event | 说明 |
 |------|------|------|
-| **agent-cli-context** | UserPromptSubmit | 提示 Codex、OpenCode、QoderCLI 是否安装，供 `agent-task` 选择外部 Agent 时参考。 |
-| **protect-files** | PreToolUse | 阻止修改 `.env`、密钥、凭证等敏感文件。 |
+| **agent-cli-context** | PreToolUse（matcher: `Skill`） | 通过 `skill-prerun.sh` 调度，仅在 `agent-task` 触发时报告 Codex / OpenCode / QoderCLI 是否已安装。 |
+| **ensure-hf-cli** | PreToolUse（matcher: `Skill`） | 仅在 `hf-papers` 触发时检查并自动安装 `huggingface_hub[cli]`。同样走 `skill-prerun.sh`。 |
+| **ensure-python-env** | PreToolUse（matcher: `Skill`） | 仅在 `data-analysis` 触发时检查并自动把 pandas/matplotlib/seaborn 装到项目 `.venv`。同样走 `skill-prerun.sh`。 |
+| **protect-files** | PreToolUse（matcher: `Edit\|Write`） | 阻止修改 `.env`、密钥、凭证等敏感文件。始终生效。 |
 | **notify-push** | Notification + Stop | 带任务上下文的推送通知，支持 Bark 等 webhook，并 fallback 到桌面通知。设置 `NOTIFY_URL` 启用移动端推送。 |
 | **stop-guard** | Stop | 会话结束前检查任务完成度，并提示是否需要同步文档。 |
 

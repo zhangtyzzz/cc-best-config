@@ -1,12 +1,6 @@
 ---
 name: data-analysis
 description: Analyze structured data and produce evidence backed reports with Python. Use when the user asks to analyze CSV, Excel, SQL results, KPIs, business metrics, or other tabular data, including requests like "look at this data", "what trends do you see", "make a chart", "summarize these numbers", or "write a report from this spreadsheet". Also trigger for research synthesis from multiple sources and for database table analysis involving systems like ODPS, BigQuery, or MySQL. This skill covers data requirements, sufficiency checks, Python analysis, charts, and a polished Markdown report with limits and sources.
-hooks:
-  PreToolUse:
-    - matcher: "Bash"
-      hooks:
-        - type: command
-          command: "_R=\"${CLAUDE_SKILL_DIR}\"; [ -z \"$_R\" ] && _R=\"$HOME/.claude/skills/data-analysis\"; python3 \"$_R/scripts/ensure_python_env.py\""
 ---
 
 # Data Analysis

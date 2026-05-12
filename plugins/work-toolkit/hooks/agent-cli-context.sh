@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Reports which supported external CLI agents (codex, opencode, qodercli) are
+# installed. Designed to be invoked via `skill-prerun.sh agent-task ...` so it
+# only runs when the agent-task skill is being launched.
+#
+# Outputs the status as PreToolUse JSON `additionalContext` so the model sees
+# it before bridge.js is invoked.
 set -u
 
 agents=(codex opencode qodercli)
@@ -20,13 +26,14 @@ join_by() {
 
 available_text="none"
 missing_text="none"
+[ ${#available[@]} -gt 0 ] && available_text=$(join_by "${available[@]}")
+[ ${#missing[@]}   -gt 0 ] && missing_text=$(join_by "${missing[@]}")
 
-if [ ${#available[@]} -gt 0 ]; then
-  available_text=$(join_by "${available[@]}")
+context_msg="Available external CLI agents: ${available_text}. Missing: ${missing_text}."
+
+if command -v jq >/dev/null 2>&1; then
+  jq -nc --arg ctx "$context_msg" \
+    '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $ctx}}'
+else
+  printf '%s\n' "$context_msg"
 fi
-
-if [ ${#missing[@]} -gt 0 ]; then
-  missing_text=$(join_by "${missing[@]}")
-fi
-
-printf 'Available external CLI agents: %s. Missing: %s.\n' "$available_text" "$missing_text"
